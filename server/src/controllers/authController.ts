@@ -15,20 +15,31 @@ function generateToken(userId: string,email: string,role: string) {
      return {accessToken,refreshToken}
 }
 
-async function setTokens(res: Response,accessToken:string,refreshToken:string) {
-    res.cookie('accessToken', accessToken, {
-        httpOnly:true,
-        secure:process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 60*60*1000
-    })
-    res.cookie('refreshToken', refreshToken, {
-        httpOnly:true,
-        secure:process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 7*24*60*60
-    })
+async function setTokens(res: Response, accessToken: string, refreshToken: string, userId?: string) {
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",   // safer for dev
+    path: "/",
+    maxAge: 60 * 60 * 1000, // 1 hour
+  });
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+
+  if (userId) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken },
+    });
+  }
 }
+
 
 
 
@@ -84,18 +95,20 @@ export const login = async (req: Request,res: Response) : Promise<void> => {
 
      const {accessToken,refreshToken} = generateToken(extractCurrentUser.id,extractCurrentUser.email,extractCurrentUser.role)
     
-     await setTokens(res,accessToken,refreshToken)
+     await setTokens(res, accessToken, refreshToken, extractCurrentUser.id);
 
-     res.status(200).json({
+            res.status(200).json({
         success: true,
         message: "Logged In Successfully",
-        user : {
-            id : extractCurrentUser.id,
-            name : extractCurrentUser.name,
-            email : extractCurrentUser.email,
-            role : extractCurrentUser.role
-        }
-     })
+        user: {
+            id: extractCurrentUser.id,
+            name: extractCurrentUser.name,
+            email: extractCurrentUser.email,
+            role: extractCurrentUser.role,
+        },
+        accessToken,         // return in body as fallback
+        refreshToken,
+        });
     } catch (error) {
       console.error(error)
       res.status(500).json({
@@ -106,45 +119,33 @@ export const login = async (req: Request,res: Response) : Promise<void> => {
 
 
 
-export const refereshAccessToken = async  (req:Request,res: Response) : Promise<void> => {
-    const refreshToken = req.cookies.refreshToken;
-    if(!refreshToken) {
-        res.status(401).json({
-            success:false,
-            error:'Invalid refresh token'
-        })
+export const refereshAccessToken = async (req: Request, res: Response) : Promise<void> => {
+  const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken) {
+    res.status(401).json({ success:false, error:'No refresh token' });
+    return;
+  }
+
+  try {
+    const user = await prisma.user.findFirst({ where: { refreshToken } });
+    if (!user) {
+      res.status(401).json({ success:false, error:'Invalid refresh token' });
+      return;
     }
 
-    try {
+    const { accessToken, refreshToken: newRefreshToken } = generateToken(user.id, user.email, user.role);
+    await setTokens(res, accessToken, newRefreshToken, user.id);
 
-        const user = await prisma.user.findFirst({
-            where : {
-                refreshToken : refreshToken
-            }
-        })
-
-        if(!user) {
-            res.status(401).json({
-                success : false,
-                error : 'User Not Found'
-            })
-            return
-        }
-
-     const {accessToken,refreshToken : newRefreshToken} = generateToken(user.id,user.email,user.role)
-     await setTokens(res,accessToken,newRefreshToken)
-        
-     res.status(200).json({
-        success: true,
-        message: "refresh token refreshed successfully"
-     })
-
-    } catch (error) {
-        console.error(error)
-        res.status(500).json({
-        error : "refresh token error"
-      })
-    }
+    res.status(200).json({
+      success: true,
+      accessToken,
+      refreshToken: newRefreshToken,
+      message: "Token refreshed successfully"
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Refresh token error" });
+  }
 }
 
 export const logout = async  (req:Request,res: Response) : Promise<void> => {

@@ -20,6 +20,7 @@
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.41.3",
     "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jose": "^5.9.6",
@@ -43,6 +44,7 @@
     "@types/node": "^22.9.0",
     "@types/nodemailer": "^6.4.17",
     "@types/redis": "^4.0.11",
+    "nodemon": "^3.1.10",
     "prisma": "^6.16.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
