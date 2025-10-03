@@ -1,6 +1,6 @@
 function SuperAdmin() {
     return (
-        <div>this is super admin page</div>
+        <div>SuperAdminProductListPage</div>
     )
 }
 

@@ -11,7 +11,7 @@ import Link from "next/link";
 import React, { useState } from "react";
 import { protectSignUpAction } from "@/actions/auth";
 import { toast } from "sonner"
-import { useAuthStore } from "@/store/userAuthStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from 'next/navigation'
 import { ArrowRight } from "lucide-react";
 

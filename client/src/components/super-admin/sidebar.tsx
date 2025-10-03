@@ -3,6 +3,9 @@
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { ChevronLeft, ChevronRight, FileText, ListOrdered, LogOut, Package, Printer, SendToBack, Settings } from "lucide-react";
+import { useRouter } from 'next/navigation'
+import { useAuthStore } from "@/store/useAuthStore";
+
 
 interface SidebarProps {
     isOpen : Boolean;
@@ -49,6 +52,14 @@ const menuItems = [
 
 
 function SuperAdminSidebar({isOpen,toggle} : SidebarProps) {
+
+    const router = useRouter()
+    const {logout } = useAuthStore()
+
+    async function handleLogout() {
+      await logout()
+      router.push('/auth/login')
+    }
     return (
         <div className={cn('fixed left-0 top-0 z-40 h-screen bg-background transition-all duration-300',isOpen ? 'w-64' : 'w-16','border-r')}
         >
@@ -64,6 +75,21 @@ function SuperAdminSidebar({isOpen,toggle} : SidebarProps) {
                 >
                     {isOpen ? <ChevronLeft className="h-4 w-4"/> : <ChevronRight className="h-4 w-4"/>}
                 </Button>
+            </div>
+            <div className="space-y-1 py-4">
+              {
+                menuItems.map(item => 
+
+                  <div 
+                  onClick={item.name === 'logout' ? handleLogout : ()=>router.push(item.href)} 
+                  key={item.name}
+                  className={cn('flex cursor-pointer items-center px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground')}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    <span className={cn('ml-3',!isOpen && "hidden")}>{item.name}</span>
+                  </div>
+                )
+              }
             </div>
         </div>
     )

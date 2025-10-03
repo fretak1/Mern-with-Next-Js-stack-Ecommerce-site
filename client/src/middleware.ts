@@ -8,7 +8,7 @@ const userRoutes = ["/home"];
 export async function middleware(request: NextRequest) {
   const accessToken = request.cookies.get("accessToken")?.value;
   const { pathname } = request.nextUrl;
- console.log("All Cookies:", request.cookies.getAll());
+
 
 
 
