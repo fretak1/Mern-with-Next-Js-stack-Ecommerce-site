@@ -24,14 +24,14 @@ interface ProductState {
   error: string | null;
   fetchAllProductsForAdmin: () => Promise<void>;
   createProduct: (productData: FormData) => Promise<Product>;
-  updateProduct: (id: string, productData: FormData) => Promise<void>;
-  deleteProduct: (id: string) => Promise<void>;
-  getProductById?: (id: string) => Promise<Product | null>;
+  updateProduct: (id: string, productData: FormData) => Promise<Product>;
+  deleteProduct: (id: string) => Promise<boolean>;
+  getProductById: (id: string) => Promise<Product | null>;
 }
 
 export const useProductStore = create<ProductState>((set, get) => ({
   products: [],
-  isLoading: false,
+  isLoading: true,
   error: null,
   fetchAllProductsForAdmin: async () => {
     set({ isLoading: true, error: null });
@@ -44,7 +44,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
         }
       );
 
-      set({ products: response.data, isLoading: false });
+      set({ products: response.data.allProducts, isLoading: false });
     } catch (e) {
       set({ error: "Failed to fetch product", isLoading: false });
     }
@@ -80,12 +80,13 @@ export const useProductStore = create<ProductState>((set, get) => ({
         {
           withCredentials: true,
           headers: {
-            "Content-Type": "multipart/form-data",
+            "Content-Type": "application/json",
           },
         }
       );
 
       set({ isLoading: false });
+      return response.data;
     } catch (error) {
       set({ error: "Failed to update product", isLoading: false });
     }
@@ -99,6 +100,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
       });
 
       set({ isLoading: false });
+      return response.data.success;
     } catch (error) {
       set({ error: "Failed to delete product", isLoading: false });
     }
@@ -112,7 +114,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
       });
 
       set({ isLoading: false });
-      return response.data;
+      return response.data.product;
     } catch (error) {
       set({ error: "Failed to delete product", isLoading: false });
     }

@@ -15,8 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useProductStore } from "@/store/useProductStore";
 import { Upload } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { ChangeEvent, FormEvent, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 interface FormState {
@@ -65,9 +65,33 @@ function SuperAdminManageProductPage() {
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const searchParams = useSearchParams();
+  const getCurrentEditedProductId = searchParams.get("id");
+  const isEditMode = !!getCurrentEditedProductId;
 
   const router = useRouter();
-  const { createProduct, isLoading, updateProduct, error } = useProductStore();
+  const { createProduct, isLoading, updateProduct, error, getProductById } =
+    useProductStore();
+
+  useEffect(() => {
+    if (isEditMode) {
+      getProductById(getCurrentEditedProductId).then((product) => {
+        if (product) {
+          setFormState({
+            name: product.name,
+            brand: product.brand,
+            description: product.description,
+            category: product.category,
+            gender: product.gender,
+            price: product.price.toString(),
+            stock: product.stock.toString(),
+          });
+          setSelectedSizes(product.sizes);
+          setSelectedColors(product.colors);
+        }
+      });
+    }
+  }, [isEditMode, getCurrentEditedProductId, getProductById]);
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -121,11 +145,15 @@ function SuperAdminManageProductPage() {
     formData.append("sizes", selectedSizes.join(","));
     formData.append("colors", selectedColors.join(","));
 
-    selectedFiles.forEach((file) => {
-      formData.append("images", file);
-    });
+    if (!isEditMode) {
+      selectedFiles.forEach((file) => {
+        formData.append("images", file);
+      });
+    }
 
-    const result = await createProduct(formData);
+    const result = isEditMode
+      ? await updateProduct(getCurrentEditedProductId, formData)
+      : await createProduct(formData);
 
     if (result) {
       router.push("/super-admin/products/list");
@@ -142,37 +170,39 @@ function SuperAdminManageProductPage() {
           onSubmit={handleFormSubmit}
           className="grid gap-6 md:grid-cols-2 lg:grid-cols-1"
         >
-          <div className="mt-2 flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-400 p-12">
-            <div className="text-center">
-              <Upload className="mx-auto h-12 w-12 text-gray-400" />
-              <div className="mt-4 flex text-sm leadin-6 text-gray-400">
-                <Label>
-                  <span>Click to Browse</span>
-                  <Input
-                    type="file"
-                    className="sr-only"
-                    multiple
-                    onChange={handleFileChange}
-                  />
-                </Label>
-              </div>
-            </div>
-            {selectedFiles.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {selectedFiles.map((file, index) => (
-                  <div key={index} className="relative">
-                    <Image
-                      src={URL.createObjectURL(file)}
-                      alt={`preiview ${index + 1}`}
-                      width={80}
-                      height={80}
-                      className="h-20 w-20 object-cover rounded-md"
+          {isEditMode ? null : (
+            <div className="mt-2 flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-400 p-12">
+              <div className="text-center">
+                <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                <div className="mt-4 flex text-sm leadin-6 text-gray-400">
+                  <Label>
+                    <span>Click to Browse</span>
+                    <Input
+                      type="file"
+                      className="sr-only"
+                      multiple
+                      onChange={handleFileChange}
                     />
-                  </div>
-                ))}
+                  </Label>
+                </div>
               </div>
-            )}
-          </div>
+              {selectedFiles.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="relative">
+                      <Image
+                        src={URL.createObjectURL(file)}
+                        alt={`preiview ${index + 1}`}
+                        width={80}
+                        height={80}
+                        className="h-20 w-20 object-cover rounded-md"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div className="space-y-4">
             <div>
               <Label>Product Name</Label>

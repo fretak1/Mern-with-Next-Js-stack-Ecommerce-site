@@ -7,6 +7,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes";
 import productRoutes from "./routes/productRoutes";
+import couponRoutes from "./routes/couponRoutes";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -33,6 +34,7 @@ export const prisma = new PrismaClient();
 
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/coupon", couponRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello from E-Commerce backend");

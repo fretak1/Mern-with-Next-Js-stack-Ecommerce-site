@@ -123,9 +123,7 @@ export const updateProduct = async (
       colors,
       price,
       stock,
-      soldCount,
       rating,
-      images,
     } = req.body;
 
     const updatedProduct = await prisma.product.update({
@@ -140,8 +138,6 @@ export const updateProduct = async (
         colors: colors.split(","),
         price: parseFloat(price),
         stock: parseInt(stock),
-        images,
-        soldCount: parseInt(soldCount),
         rating: parseInt(rating),
       },
     });
