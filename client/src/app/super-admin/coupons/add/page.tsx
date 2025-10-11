@@ -3,7 +3,10 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useCouponStore } from "@/store/useCouponStore";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 function SuperAdminManageCouponsPage() {
   const [formData, setFormData] = useState({
@@ -13,7 +16,8 @@ function SuperAdminManageCouponsPage() {
     endDate: "",
     usageLimit: 0,
   });
-
+  const router = useRouter();
+  const { createCoupon, isLoading } = useCouponStore();
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
       ...prev,
@@ -36,13 +40,38 @@ function SuperAdminManageCouponsPage() {
     }));
   };
 
+  const handleCouponSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (new Date(formData.endDate) <= new Date(formData.startDate)) {
+      toast("End date must be after Start Date");
+
+      return;
+    }
+
+    const couponData = {
+      ...formData,
+      discountPercent: parseFloat(formData.discountPercent.toString()),
+      usageLimit: parseInt(formData.usageLimit.toString()),
+    };
+
+    const result = await createCoupon(couponData);
+    if (result) {
+      toast("Coupon Added Successfully");
+
+      router.push("/super-admin/coupons/list");
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="flex flex-col gap-6">
         <header className="flex items-center justify-between">
           <h1>Create New Coupon</h1>
         </header>
-        <form action="" className="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
+        <form
+          onSubmit={handleCouponSubmit}
+          className="grid gap-6 md:grid-cols-2 lg:grid-cols-1"
+        >
           <div className="space-y-4">
             <div>
               <Label>Start Date</Label>
@@ -50,7 +79,7 @@ function SuperAdminManageCouponsPage() {
                 value={formData.startDate}
                 onChange={handleInputChange}
                 type="date"
-                name="StartDate"
+                name="startDate"
                 className="mt-1.5"
                 required
               />
@@ -107,8 +136,8 @@ function SuperAdminManageCouponsPage() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full">
-              Create
+            <Button disabled={isLoading} type="submit" className="w-full">
+              {isLoading ? "Creating" : "Create"}
             </Button>
           </div>
         </form>

@@ -64,6 +64,7 @@ export const useCouponStore = create<couponStore>((set, get) => ({
         withCredentials: true,
       });
       set({ isLoading: false });
+
       return response.data.success;
     } catch (error) {
       set({ isLoading: false, error: "failed to delete coupon" });

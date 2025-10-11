@@ -67,7 +67,7 @@ export const deleteCoupon = async (
     });
 
     res.status(201).json({
-      sucess: true,
+      success: true,
       message: "coupon deleted Successfully",
       id: id,
     });
