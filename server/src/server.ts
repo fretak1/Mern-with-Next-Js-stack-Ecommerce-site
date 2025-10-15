@@ -9,6 +9,7 @@ import authRoutes from "./routes/authRoutes";
 import productRoutes from "./routes/productRoutes";
 import couponRoutes from "./routes/couponRoutes";
 import settingsRoutes from "./routes/settingRoutes";
+import cartRoutes from "./routes/cartRoutes";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -37,6 +38,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/coupon", couponRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/cart", cartRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello from E-Commerce backend");
