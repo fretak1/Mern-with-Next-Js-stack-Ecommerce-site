@@ -4,8 +4,6 @@ import { upload } from "../middleware/uploadMiddleware";
 import {
   addFeatureBanners,
   fetchFeatureBanners,
-  getFeaturedProducts,
-  updateFeaturedProducts,
 } from "../controllers/settingsController";
 
 const router = express.Router();
@@ -18,13 +16,6 @@ router.post(
   addFeatureBanners
 );
 
-router.get("/get-banners", authenticateJwt, fetchFeatureBanners);
-router.post(
-  "/update-feature-banners",
-  authenticateJwt,
-  isSuperAdmin,
-  updateFeaturedProducts
-);
-router.get("/fetch-feature-products", authenticateJwt, getFeaturedProducts);
+router.get("/get-banners", fetchFeatureBanners);
 
 export default router;

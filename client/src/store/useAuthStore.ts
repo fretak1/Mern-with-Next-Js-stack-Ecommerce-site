@@ -1,23 +1,27 @@
-import { API_ROUTES } from '@/utils/api'
-import axios from 'axios'
-import {create} from 'zustand'
-import {persist} from 'zustand/middleware'
+import { API_ROUTES } from "@/utils/api";
+import axios from "axios";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 type User = {
-    id: string,
-    name: string | null 
-    email:string,
-    role:'USER' | 'SUPER_ADMIN'
-}
+  id: string;
+  name: string | null;
+  email: string;
+  role: "USER" | "SUPER_ADMIN";
+};
 
 type AuthStore = {
-    user: User | null,
-    isLoading: boolean,
-    error: string | null,
-    register: (name:string, email:string, password:string) => Promise<string | null>
-    login: ( email:string, password:string) => Promise<boolean>
-    logout: ()=> Promise<void>
-    refreshAccessToken : ()=> Promise<Boolean>
-}
+  user: User | null;
+  isLoading: boolean;
+  error: string | null;
+  register: (
+    name: string,
+    email: string,
+    password: string
+  ) => Promise<string | null>;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  refreshAccessToken: () => Promise<Boolean>;
+};
 
 const axiosInstance = axios.create({
   baseURL: API_ROUTES.AUTH,
@@ -78,6 +82,7 @@ export const useAuthStore = create<AuthStore>()(
         try {
           await axiosInstance.post("/logout");
           set({ user: null, isLoading: false });
+          localStorage.removeItem("auth-storage");
         } catch (error) {
           set({
             isLoading: false,

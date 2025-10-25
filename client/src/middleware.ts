@@ -3,14 +3,11 @@ import { jwtVerify } from "jose";
 
 const publicRoutes = ["/auth/register", "/auth/login"];
 const superAdminRoutes = ["/super-admin", "/super-admim/:path*"];
-const userRoutes = ["/home"];
+const userRoutes = ["/home", "/account", "/cart", "/checkout", "/listing"];
 
 export async function middleware(request: NextRequest) {
   const accessToken = request.cookies.get("accessToken")?.value;
   const { pathname } = request.nextUrl;
-
-
-
 
   if (accessToken) {
     try {
@@ -25,7 +22,7 @@ export async function middleware(request: NextRequest) {
       if (publicRoutes.includes(pathname)) {
         return NextResponse.redirect(
           new URL(
-            role === "SUPER_ADMIN" ? "/super-admin" : "/home",
+            role === "SUPER_ADMIN" ? "/super-admin/products/list" : "/home",
             request.url
           )
         );
@@ -35,7 +32,9 @@ export async function middleware(request: NextRequest) {
         role === "SUPER_ADMIN" &&
         userRoutes.some((route) => pathname.startsWith(route))
       ) {
-        return NextResponse.redirect(new URL("/super-admin", request.url));
+        return NextResponse.redirect(
+          new URL("/super-admin/products/list", request.url)
+        );
       }
       if (
         role !== "SUPER_ADMIN" &&
@@ -72,10 +71,6 @@ export async function middleware(request: NextRequest) {
         return response;
       }
     }
-  }
-
-  if (!publicRoutes.includes(pathname)) {
-    return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
   return NextResponse.next();

@@ -1,6 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import {
   ChevronLeft,
@@ -9,11 +8,11 @@ import {
   ListOrdered,
   LogOut,
   Package,
-  Printer,
-  SendToBack,
+  PlusCircle,
+  ReceiptText,
   Settings,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 
 interface SidebarProps {
@@ -29,12 +28,12 @@ const menuItems = [
   },
   {
     name: "Add New Product",
-    icon: Printer,
+    icon: PlusCircle,
     href: "/super-admin/products/add",
   },
   {
     name: "Orders",
-    icon: SendToBack,
+    icon: ReceiptText,
     href: "/super-admin/orders",
   },
   {
@@ -53,48 +52,40 @@ const menuItems = [
     href: "/super-admin/settings",
   },
   {
-    name: "logout",
+    name: "Logout",
     icon: LogOut,
-    href: "",
+    href: "", // Special case for logout
   },
 ];
 
 function SuperAdminSidebar({ isOpen, toggle }: SidebarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { logout } = useAuthStore();
 
   async function handleLogout() {
     await logout();
     router.push("/auth/login");
   }
+
   return (
     <div
-      // Background changed to Primary Blue (#2F80ED) for a branded, premium feel
-      className={cn(
-        "fixed left-0 top-0 z-40 h-screen transition-all duration-300 shadow-xl",
-        isOpen ? "w-64" : "w-16"
-      )}
-      style={{ backgroundColor: "#2F80ED" }}
+      className={`fixed left-0 top-0 z-40 h-screen transition-all duration-300 shadow-lg bg-gray-100
+        ${isOpen ? "w-64" : "w-16"}`}
     >
       {/* Header / Logo Section */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-white/20">
+      <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200">
         <h1
-          className={cn(
-            "text-xl font-extrabold text-white tracking-wider transition-opacity duration-200",
-            !isOpen && "opacity-0 hidden"
-          )}
+          className={`text-xl font-extrabold text-gray-900 tracking-wider transition-opacity duration-200
+            ${!isOpen ? "opacity-0 hidden" : ""}`}
         >
           ADMIN PANEL
         </h1>
         <Button
-          variant={"ghost"}
-          size={"icon"}
-          // Button uses the Warm Yellow accent color for contrast
-          className={cn(
-            "ml-auto text-white hover:bg-white/10",
-            !isOpen && "mx-auto"
-          )}
-          style={{ color: "#F2C94C" }}
+          variant="ghost"
+          size="icon"
+          className={`ml-auto text-gray-500 hover:bg-gray-200 hover:text-gray-900 transition-colors
+            ${!isOpen ? "mx-auto" : ""}`}
           onClick={toggle}
         >
           {isOpen ? (
@@ -109,37 +100,49 @@ function SuperAdminSidebar({ isOpen, toggle }: SidebarProps) {
       <div className="flex flex-col h-[calc(100vh-4rem)]">
         <div className="flex-1 space-y-1 py-6">
           {menuItems.map((item) => {
-            // Necessary comment: Add logic here (e.g., using usePathname) to determine if link is active
-            const isLogout = item.name === "logout";
+            const isLogout = item.name === "Logout";
+            const isActive = pathname === item.href && !isLogout;
 
             return (
               <div
                 onClick={isLogout ? handleLogout : () => router.push(item.href)}
                 key={item.name}
-                // Styling for dark mode on a blue background
-                className={cn(
-                  "flex cursor-pointer items-center py-3 text-sm font-medium transition-colors duration-200",
-                  // Base text style is light and subtle
-                  isOpen
-                    ? // Hover uses a Light Aqua accent color
-                      "px-6 text-white hover:bg-[#56CCF2] hover:text-[#2F80ED] rounded-lg mx-2"
-                    : "justify-center text-white/90 hover:bg-[#56CCF2] hover:text-[#2F80ED] px-0",
-                  // Specific styling for Logout item
-                  isLogout &&
-                    "mt-4 border-t border-white/20 text-red-300 hover:text-red-500",
-                  // Necessary comment: Replace 'false' with the 'isActive' check for the active class (e.g., bg-white)
-                  false &&
-                    "bg-white text-[#2F80ED] font-semibold shadow-inner rounded-lg mx-2" // Active link uses pure white for maximum contrast
-                )}
+                className={`flex cursor-pointer items-center py-3 text-sm font-medium transition-colors duration-200
+                  ${
+                    isOpen
+                      ? // Open sidebar styling (light mode)
+                        `px-6 rounded-lg mx-2
+                          ${
+                            isActive
+                              ? "bg-blue-500 text-primary-foreground shadow-sm" // Active state
+                              : "text-gray-700 hover:bg-gray-200 hover:text-gray-900" // Default state
+                          }`
+                      : // Closed sidebar styling (light mode)
+                        `justify-center px-0
+                          ${
+                            isActive
+                              ? "bg-blue-500 text-primary-foreground" // Active state
+                              : "text-gray-700 hover:bg-gray-200 hover:text-gray-900" // Default state
+                          }`
+                  }
+                  ${
+                    isLogout
+                      ? `mt-4 pt-4 border-t border-gray-200
+                         ${
+                           isOpen
+                             ? "text-red-600 hover:bg-red-50 hover:text-red-700"
+                             : "text-red-600 hover:bg-red-50 hover:text-red-700"
+                         }`
+                      : ""
+                  }`}
               >
                 <item.icon
-                  className={cn("h-5 w-5 flex-shrink-0", !isOpen && "mx-auto")}
+                  className={`h-5 w-5 flex-shrink-0
+                    ${!isOpen ? "mx-auto" : ""}`}
                 />
                 <span
-                  className={cn(
-                    "ml-4 whitespace-nowrap transition-opacity duration-200",
-                    !isOpen && "hidden"
-                  )}
+                  className={`whitespace-nowrap transition-opacity duration-200
+                    ${!isOpen ? "hidden" : "ml-4"}`}
                 >
                   {item.name}
                 </span>

@@ -6,4 +6,6 @@ export const API_ROUTES = {
   COUPON: `${API_BASE_URL}/api/coupon`,
   SETTINGS: `${API_BASE_URL}/api/settings`,
   CART: `${API_BASE_URL}/api/cart`,
+  ADDRESS: `${API_BASE_URL}/api/address`,
+  ORDER: `${API_BASE_URL}/api/order`,
 };

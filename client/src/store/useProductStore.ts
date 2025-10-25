@@ -16,6 +16,8 @@ export interface Product {
   rating?: number;
   soldCount: number;
   images: string[];
+  productType: string;
+  brandCategory: string;
 }
 
 interface ProductState {
@@ -28,9 +30,10 @@ interface ProductState {
   fetchAllProductsForAdmin: () => Promise<void>;
   createProduct: (productData: FormData) => Promise<Product>;
   updateProduct: (id: string, productData: FormData) => Promise<Product>;
+  getAllProducts: () => Promise<void>;
   deleteProduct: (id: string) => Promise<boolean>;
   getProductById: (id: string) => Promise<Product | null>;
-  fetchProductsForClient: (params: {
+  getFilteredProducts: (params: {
     page?: number;
     limit?: number;
     categories?: string[];
@@ -138,7 +141,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
       set({ error: "Failed to delete product", isLoading: false });
     }
   },
-  fetchProductsForClient: async (params) => {
+  getFilteredProducts: async (params) => {
     set({ isLoading: true, error: null });
     try {
       const queryParams = {
@@ -150,7 +153,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
       };
 
       const response = await axios.get(
-        `${API_ROUTES.PRODUCTS}/fetch-client-products`,
+        `${API_ROUTES.PRODUCTS}/fetch-filtered-products`,
         {
           params: queryParams,
           withCredentials: true,
@@ -165,6 +168,23 @@ export const useProductStore = create<ProductState>((set, get) => ({
         isLoading: false,
       });
     } catch (e) {
+      set({ error: "Failed to fetch products", isLoading: false });
+    }
+  },
+  getAllProducts: async () => {
+    set({ isLoading: true, error: null });
+
+    try {
+      const response = await axios.get(
+        `${API_ROUTES.PRODUCTS}/getAllProducts`,
+        {
+          withCredentials: true,
+        }
+      );
+
+      set({ products: response.data.products, isLoading: false });
+    } catch (error) {
+      console.error("Failed to fetch products:", error);
       set({ error: "Failed to fetch products", isLoading: false });
     }
   },

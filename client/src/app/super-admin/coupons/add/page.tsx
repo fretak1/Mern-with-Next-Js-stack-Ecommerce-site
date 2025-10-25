@@ -7,6 +7,7 @@ import { useCouponStore } from "@/store/useCouponStore";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react"; // Import Loader2 for loading animation
 
 function SuperAdminManageCouponsPage() {
   const [formData, setFormData] = useState({
@@ -18,10 +19,12 @@ function SuperAdminManageCouponsPage() {
   });
   const router = useRouter();
   const { createCoupon, isLoading } = useCouponStore();
+
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type } = event.target;
     setFormData((prev) => ({
       ...prev,
-      [event.target.name]: event.target.value,
+      [name]: type === "number" ? parseFloat(value) || 0 : value, // Handle number conversion
     }));
   };
 
@@ -42,12 +45,23 @@ function SuperAdminManageCouponsPage() {
 
   const handleCouponSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (new Date(formData.endDate) <= new Date(formData.startDate)) {
-      toast("End date must be after Start Date");
 
+    if (new Date(formData.endDate) <= new Date(formData.startDate)) {
+      toast.error("End date must be after Start Date"); // Using toast.error
       return;
     }
 
+    if (formData.discountPercent <= 0) {
+      toast.error("Discount percentage must be greater than 0.");
+      return;
+    }
+
+    if (formData.usageLimit <= 0) {
+      toast.error("Usage limit must be greater than 0.");
+      return;
+    }
+
+    // Ensure discountPercent and usageLimit are numbers before passing
     const couponData = {
       ...formData,
       discountPercent: parseFloat(formData.discountPercent.toString()),
@@ -56,88 +70,137 @@ function SuperAdminManageCouponsPage() {
 
     const result = await createCoupon(couponData);
     if (result) {
-      toast("Coupon Added Successfully");
-
+      toast.success("Coupon Added Successfully"); // Using toast.success
       router.push("/super-admin/coupons/list");
+    } else {
+      toast.error("Failed to create coupon. Please try again."); // Generic error message if result is false
     }
   };
 
   return (
-    <div className="p-6">
-      <div className="flex flex-col gap-6">
-        <header className="flex items-center justify-between">
-          <h1>Create New Coupon</h1>
+    <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 sm:p-8 lg:p-10">
+        <header className="flex items-center justify-between pb-6 mb-8 border-b border-gray-200">
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+            Create New Coupon
+          </h1>
+          {/* Optionally add a back button here */}
+          {/* <Button variant="outline" onClick={() => router.back()} className="text-gray-700 border-gray-300 hover:bg-gray-50">
+            Back to Coupons
+          </Button> */}
         </header>
         <form
           onSubmit={handleCouponSubmit}
-          className="grid gap-6 md:grid-cols-2 lg:grid-cols-1"
+          className="max-w-xl mx-auto space-y-6"
         >
           <div className="space-y-4">
             <div>
-              <Label>Start Date</Label>
+              <Label
+                htmlFor="startDate"
+                className="text-gray-700 font-medium mb-1.5 block"
+              >
+                Start Date
+              </Label>
               <Input
+                id="startDate"
                 value={formData.startDate}
                 onChange={handleInputChange}
                 type="date"
                 name="startDate"
-                className="mt-1.5"
+                className="w-full border-gray-300 focus:border-primary focus:ring-primary"
                 required
               />
             </div>
             <div>
-              <Label>End Date</Label>
+              <Label
+                htmlFor="endDate"
+                className="text-gray-700 font-medium mb-1.5 block"
+              >
+                End Date
+              </Label>
               <Input
+                id="endDate"
                 value={formData.endDate}
                 onChange={handleInputChange}
                 type="date"
                 name="endDate"
-                className="mt-1.5"
+                className="w-full border-gray-300 focus:border-primary focus:ring-primary"
                 required
               />
             </div>
             <div>
-              <Label>Coupon Code</Label>
-              <div className="flex justify-between items-center gap-2">
+              <Label
+                htmlFor="code"
+                className="text-gray-700 font-medium mb-1.5 block"
+              >
+                Coupon Code
+              </Label>
+              <div className="flex gap-3">
                 <Input
+                  id="code"
                   type="text"
                   name="code"
                   placeholder="Enter coupon code"
-                  className="mt-1.5"
+                  className="flex-1 border-gray-300 focus:border-primary focus:ring-primary"
                   required
                   value={formData.code}
                   onChange={handleInputChange}
                 />
-                <Button type="button" onClick={handleCreateUniqueCoupon}>
+                <Button
+                  type="button"
+                  onClick={handleCreateUniqueCoupon}
+                  variant="outline"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
+                >
                   Create Unique Code
                 </Button>
               </div>
             </div>
             <div>
-              <Label>Discount Percentage</Label>
+              <Label
+                htmlFor="discountPercent"
+                className="text-gray-700 font-medium mb-1.5 block"
+              >
+                Discount Percentage
+              </Label>
               <Input
+                id="discountPercent"
                 type="number"
                 name="discountPercent"
-                placeholder="Enter Discount Percentage"
-                className="mt-1.5"
+                placeholder="e.g., 10 for 10%"
+                className="w-full border-gray-300 focus:border-primary focus:ring-primary"
                 value={formData.discountPercent}
                 onChange={handleInputChange}
                 required
+                min="1" // Add min value for better validation
               />
             </div>
             <div>
-              <Label>Usage Limits</Label>
+              <Label
+                htmlFor="usageLimit"
+                className="text-gray-700 font-medium mb-1.5 block"
+              >
+                Usage Limit
+              </Label>
               <Input
+                id="usageLimit"
                 type="number"
                 name="usageLimit"
-                placeholder="Enter Usage Limits"
-                className="mt-1.5"
+                placeholder="e.g., 100"
+                className="w-full border-gray-300 focus:border-primary focus:ring-primary"
                 value={formData.usageLimit}
                 onChange={handleInputChange}
                 required
+                min="1" // Add min value for better validation
               />
             </div>
-            <Button disabled={isLoading} type="submit" className="w-full">
-              {isLoading ? "Creating" : "Create"}
+            <Button
+              disabled={isLoading}
+              type="submit"
+              className="w-full bg-blue-500 hover:bg-blue-400 text-primary-foreground py-2.5 px-4 rounded-md font-semibold text-base transition-colors flex items-center justify-center gap-2"
+            >
+              {isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
+              {isLoading ? "Creating..." : "Create Coupon"}
             </Button>
           </div>
         </form>

@@ -13,7 +13,12 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useProductStore } from "@/store/useProductStore";
-import { brands, categories, colors, sizes } from "@/utils/conifg";
+import {
+  brands as brandsData,
+  categories,
+  colors,
+  sizes,
+} from "@/utils/conifg";
 import { Upload } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -22,23 +27,27 @@ import { toast } from "sonner";
 
 interface FormState {
   name: string;
-  brand: string;
+  brandCategory: string; // Category select
+  brand: string; // Brand select/input
   description: string;
   category: string;
   gender: string;
   price: string;
   stock: string;
+  productType: string;
 }
 
 function SuperAdminManageProductPage() {
-  const [formState, setFormState] = useState({
+  const [formState, setFormState] = useState<FormState>({
     name: "",
+    brandCategory: "",
     brand: "",
     description: "",
     category: "",
     gender: "",
     price: "",
     stock: "",
+    productType: "",
   });
 
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
@@ -49,23 +58,26 @@ function SuperAdminManageProductPage() {
   const isEditMode = !!getCurrentEditedProductId;
 
   const router = useRouter();
-  const { createProduct, isLoading, updateProduct, error, getProductById } =
+  const { createProduct, isLoading, updateProduct, getProductById } =
     useProductStore();
 
-  console.log(isLoading, "nnnnnnnnnnnnnnnnnnn");
+    useEffect(() => {
 
+    },)
   useEffect(() => {
     if (isEditMode) {
       getProductById(getCurrentEditedProductId).then((product) => {
         if (product) {
           setFormState({
             name: product.name,
+            brandCategory: product.brandCategory, // optional reset
             brand: product.brand,
             description: product.description,
             category: product.category,
             gender: product.gender,
             price: product.price.toString(),
             stock: product.stock.toString(),
+            productType: product.productType,
           });
           setSelectedSizes(product.sizes);
           setSelectedColors(product.colors);
@@ -87,6 +99,7 @@ function SuperAdminManageProductPage() {
     setFormState((prev) => ({
       ...prev,
       [name]: value,
+      ...(name === "brandCategory" ? { brand: "" } : {}),
     }));
   };
 
@@ -111,52 +124,35 @@ function SuperAdminManageProductPage() {
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const checkFirstLevelFormSanitaization = await protectProductFormAction();
+    const checkSanitization = await protectProductFormAction();
 
-    if (!checkFirstLevelFormSanitaization.success) {
-      toast(checkFirstLevelFormSanitaization.error);
+    if (!checkSanitization.success) {
+      toast(checkSanitization.error);
       return;
     }
 
-    const formData = new FormData();
-    Object.entries(formState).forEach(([Key, value]) => {
-      formData.append(Key, value);
+    const formDataObj = new FormData();
+    Object.entries(formState).forEach(([key, value]) => {
+      formDataObj.append(key, value);
     });
-
-    formData.append("sizes", selectedSizes.join(","));
-    formData.append("colors", selectedColors.join(","));
+    formDataObj.append("sizes", selectedSizes.join(","));
+    formDataObj.append("colors", selectedColors.join(","));
 
     if (!isEditMode) {
       selectedFiles.forEach((file) => {
-        formData.append("images", file);
+        formDataObj.append("images", file);
       });
     }
 
-    // Necessary comment: Handles product creation or update based on edit mode state.
     const result = isEditMode
-      ? await updateProduct(getCurrentEditedProductId, formData)
-      : await createProduct(formData);
+      ? await updateProduct(getCurrentEditedProductId, formDataObj)
+      : await createProduct(formDataObj);
 
-    if (result) {
-      router.push("/super-admin/products/list");
-    }
+    if (result) router.push("/super-admin/products/list");
   };
 
-  useEffect(() => {
-    if (getCurrentEditedProductId === null) {
-      setFormState({
-        name: "",
-        brand: "",
-        description: "",
-        category: "",
-        gender: "",
-        price: "",
-        stock: "",
-      });
-      setSelectedColors([]);
-      setSelectedSizes([]);
-    }
-  }, [getCurrentEditedProductId]);
+  const filteredBrands =
+    brandsData.find((b) => b.title === formState.brandCategory)?.brands || [];
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 rounded-xl shadow-lg">
@@ -166,18 +162,15 @@ function SuperAdminManageProductPage() {
             {isEditMode ? "Edit Product" : "Add New Product"}
           </h1>
         </header>
+
         <form onSubmit={handleFormSubmit} className="grid gap-8 lg:grid-cols-2">
-          {/* Left Column: Image Upload/Preview */}
+          {/* Left Column: Media & Description */}
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-gray-800">
               Media & Details
             </h2>
-            {isEditMode ? (
-              <div className="p-8 border border-gray-300 rounded-xl bg-gray-50 text-center text-gray-600 font-medium">
-                Image management is handled separately in edit mode.
-              </div>
-            ) : (
-              // Styled with Primary Blue for focus
+
+            {!isEditMode && (
               <div
                 style={{
                   borderColor: "#2F80ED",
@@ -208,6 +201,7 @@ function SuperAdminManageProductPage() {
                     PNG, JPG, GIF up to 5MB
                   </p>
                 </div>
+
                 {selectedFiles.length > 0 && (
                   <div className="mt-6 flex flex-wrap gap-3 p-3 border-t border-gray-200 w-full justify-center">
                     {selectedFiles.map((file, index) => (
@@ -215,7 +209,6 @@ function SuperAdminManageProductPage() {
                         key={index}
                         className="relative shadow-md rounded-md overflow-hidden"
                       >
-                        {/* Necessary comment: The use of URL.createObjectURL is for local file preview only. */}
                         <Image
                           src={URL.createObjectURL(file)}
                           alt={`preview ${index + 1}`}
@@ -230,7 +223,6 @@ function SuperAdminManageProductPage() {
               </div>
             )}
 
-            {/* Description Field */}
             <div>
               <Label className="text-sm font-semibold text-gray-700">
                 Product Description
@@ -246,55 +238,124 @@ function SuperAdminManageProductPage() {
             </div>
           </div>
 
-          {/* Right Column: Text Inputs and Selects */}
+          {/* Right Column: Product Info */}
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">
               Product Information
             </h2>
 
-            {/* Row 1: Name and Brand */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm font-semibold text-gray-700">
-                  Product Name
-                </Label>
-                <Input
-                  type="text"
-                  name="name"
-                  placeholder="E.g., Leather Sneakers"
+            {/* Name */}
+            <div>
+              <Label className="text-sm font-semibold text-gray-700">
+                Product Name
+              </Label>
+              <Input
+                type="text"
+                name="name"
+                placeholder="E.g., Leather Sneakers"
+                style={{ borderColor: "#2F80ED" }}
+                className="mt-2 border-gray-300 focus:border-2 focus:ring-0"
+                onChange={handleInputChange}
+                value={formState.name}
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-semibold text-gray-700">
+                Product Type
+              </Label>
+              <Select
+                value={formState.productType}
+                onValueChange={(value) =>
+                  handleSelectChange("productType", value)
+                }
+              >
+                <SelectTrigger
                   style={{ borderColor: "#2F80ED" }}
                   className="mt-2 border-gray-300 focus:border-2 focus:ring-0"
-                  onChange={handleInputChange}
-                  value={formState.name}
-                />
-              </div>
-              <div className="w-full">
-                <Label className="text-sm font-semibold text-gray-700">
-                  Brand
-                </Label>
-                <Select
-                  value={formState.brand}
-                  onValueChange={(value) => handleSelectChange("brand", value)}
-                  name="brand"
                 >
-                  <SelectTrigger
-                    style={{ borderColor: "#2F80ED" }}
-                    className="mt-2 border-gray-300 focus:border-2 focus:ring-0"
-                  >
-                    <SelectValue placeholder="Select a Brand" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {brands.map((item) => (
-                      <SelectItem key={item} value={item.toLowerCase()}>
-                        {item}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <SelectValue placeholder="Select Product Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="featured">Featured Product</SelectItem>
+                  <SelectItem value="new">New Arrival</SelectItem>
+                  <SelectItem value="regular">Regular Product</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Brand Category */}
+            <div>
+              <Label className="text-sm font-semibold text-gray-700">
+                Brand Category
+              </Label>
+              <Select
+                value={formState.brandCategory}
+                onValueChange={(value) =>
+                  handleSelectChange("brandCategory", value)
+                }
+              >
+                <SelectTrigger
+                  style={{ borderColor: "#2F80ED" }}
+                  className="mt-2 border-gray-300 focus:border-2 focus:ring-0"
+                >
+                  <SelectValue placeholder="Select Brand Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {brandsData.map((b) => (
+                    <SelectItem key={b.title} value={b.title}>
+                      {b.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Row 2: Category and Gender */}
+            {/* Brand (input for Beauty & Cosmotics) */}
+            <div>
+              {formState.brandCategory === "Beauty & Cosmotics" ? (
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700">
+                    Brand
+                  </Label>
+                  <Input
+                    name="brand"
+                    placeholder="Enter brand name"
+                    value={formState.brand}
+                    onChange={handleInputChange}
+                    style={{ borderColor: "#2F80ED" }}
+                    className="mt-2 border-gray-300 focus:border-2 focus:ring-0"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700">
+                    Brand
+                  </Label>
+                  <Select
+                    value={formState.brand}
+                    onValueChange={(value) =>
+                      handleSelectChange("brand", value)
+                    }
+                    disabled={!formState.brandCategory}
+                  >
+                    <SelectTrigger
+                      style={{ borderColor: "#2F80ED" }}
+                      className="mt-2 border-gray-300 focus:border-2 focus:ring-0"
+                    >
+                      <SelectValue placeholder="Select Brand" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredBrands.map((b) => (
+                        <SelectItem key={b.name} value={b.name}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+
+            {/* Category & Gender */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-semibold text-gray-700">
@@ -305,23 +366,23 @@ function SuperAdminManageProductPage() {
                   onValueChange={(value) =>
                     handleSelectChange("category", value)
                   }
-                  name="category"
                 >
                   <SelectTrigger
                     style={{ borderColor: "#2F80ED" }}
                     className="mt-2 border-gray-300 focus:border-2 focus:ring-0"
                   >
-                    <SelectValue placeholder="Select a Category" />
+                    <SelectValue placeholder="Select Category" />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((item) => (
-                      <SelectItem key={item} value={item.toLowerCase()}>
+                      <SelectItem key={item} value={item}>
                         {item}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
               <div>
                 <Label className="text-sm font-semibold text-gray-700">
                   Gender
@@ -329,28 +390,27 @@ function SuperAdminManageProductPage() {
                 <Select
                   value={formState.gender}
                   onValueChange={(value) => handleSelectChange("gender", value)}
-                  name="gender"
                 >
                   <SelectTrigger
                     style={{ borderColor: "#2F80ED" }}
                     className="mt-2 border-gray-300 focus:border-2 focus:ring-0"
                   >
-                    <SelectValue placeholder="Select a Gender" />
+                    <SelectValue placeholder="Select Gender" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="men">Men</SelectItem>
                     <SelectItem value="women">Women</SelectItem>
-                    <SelectItem value="kids">Kids</SelectItem>
+                    <SelectItem value="both">Both</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            {/* Row 3: Price and Stock */}
+            {/* Price & Stock */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-semibold text-gray-700">
-                  Product Price ($)
+                  Price (ETB)
                 </Label>
                 <Input
                   name="price"
@@ -364,7 +424,7 @@ function SuperAdminManageProductPage() {
               </div>
               <div>
                 <Label className="text-sm font-semibold text-gray-700">
-                  Stock Quantity
+                  Stock
                 </Label>
                 <Input
                   name="stock"
@@ -378,40 +438,37 @@ function SuperAdminManageProductPage() {
               </div>
             </div>
 
-            {/* Size Selector */}
+            {/* Sizes */}
             <div>
               <Label className="text-sm font-semibold text-gray-700">
                 Available Sizes
               </Label>
               <div className="mt-2 flex flex-wrap gap-2 p-2 border border-gray-200 rounded-lg bg-white">
-                {sizes.map((item) => (
+                {sizes.map((s) => (
                   <Button
-                    onClick={() => handleToggleSize(item)}
-                    // Uses Primary Blue for selected state
-                    style={
-                      selectedSizes.includes(item)
-                        ? { backgroundColor: "#2F80ED", color: "white" }
-                        : {}
-                    }
-                    variant={
-                      selectedSizes.includes(item) ? "default" : "outline"
-                    }
-                    key={item}
+                    key={s}
                     type="button"
-                    size={"sm"}
+                    variant={selectedSizes.includes(s) ? "default" : "outline"}
+                    onClick={() => handleToggleSize(s)}
                     className={
-                      selectedSizes.includes(item)
+                      selectedSizes.includes(s)
                         ? "shadow-md hover:bg-blue-700"
                         : "border-gray-300 text-gray-700 hover:bg-gray-100"
                     }
+                    style={
+                      selectedSizes.includes(s)
+                        ? { backgroundColor: "#2F80ED", color: "white" }
+                        : {}
+                    }
+                    size="sm"
                   >
-                    {item}
+                    {s}
                   </Button>
                 ))}
               </div>
             </div>
 
-            {/* Color Selector */}
+            {/* Colors */}
             <div>
               <Label className="text-sm font-semibold text-gray-700">
                 Available Colors
@@ -421,7 +478,6 @@ function SuperAdminManageProductPage() {
                   <Button
                     key={color.name}
                     type="button"
-                    // Uses Primary Blue ring on selection
                     className={`h-8 w-8 rounded-full shadow-md ${color.class} ${
                       selectedColors.includes(color.name)
                         ? "ring-4 ring-offset-2 ring-offset-gray-100"
@@ -442,11 +498,16 @@ function SuperAdminManageProductPage() {
             <Button
               disabled={isLoading}
               type="submit"
-              // Uses Primary Blue for the main CTA
               style={{ backgroundColor: "#2F80ED" }}
               className="mt-6 w-full text-lg h-12 font-semibold hover:bg-blue-700 transition-colors shadow-lg"
             >
-              {isLoading ? "Adding..." : "Add New Product"}
+              {isLoading
+                ? isEditMode
+                  ? "Updating..."
+                  : "Adding..."
+                : isEditMode
+                ? "Update Product"
+                : "Add New Product"}
             </Button>
           </div>
         </form>

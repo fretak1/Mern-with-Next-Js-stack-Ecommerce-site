@@ -1,8 +1,14 @@
-'use client'
+"use client";
 
 import Image from "next/image";
-import banner from "../../../../public/images/banner2.jpg";
-import logo from "../../../../public/images/logo1.png";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,104 +16,126 @@ import Link from "next/link";
 import { useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner"
+import { toast } from "sonner";
 import { protectSignInAction } from "@/actions/auth";
+import logo from "../../../../public/images/logo1.png";
+import { Store } from "lucide-react";
 
-
-
-function LoginPage() {
-  const [formData, setFormData] = useState({
-          email:'',
-          password:''
-      })
-         const {login,isLoading} = useAuthStore()
-          const router = useRouter()
-
-
-          const handleOnChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-              setFormData((prev) => ({
-                ...prev,
-                [event.target.name]: event.target.value,
-              }));
-            };
-          
-            const handleSubmit = async(event: React.FormEvent)=> {
-                 event.preventDefault()
-                 const checkFirstLevelOfValidation = await protectSignInAction(formData.email)
-                 console.log(checkFirstLevelOfValidation)
-                 if(!checkFirstLevelOfValidation.success) {
-                   toast(checkFirstLevelOfValidation.error)
-                   return
-                 }
-          
-                 const success = await login(formData.email,formData.password)
-                 if(success) {
-                   toast("Login Successfull")
-                  const user = useAuthStore.getState().user
-                  if(user?.role === "SUPER_ADMIN") router.push('/super-admin')
-                    else router.push('/home')
-                 
-                  
-                 }
-            }
-
-    return (
-        <div className="min-h-screen bg-[#fff6f4] flex">
-            <div className="hidden lg:block w-1/2 bg-[#ffede1] relative overflow-hidden">
-            <Image
-          src={banner}
-          alt="Register"
-          fill
-          style={{ objectFit: "cover", objectPosition: "center" }}
-          priority
-        />
-            </div>
-            <div className="w-full lg:w-1/2 flex flex-col p-8 lg:p-16 justify-center">
-            <div className="max-w-md w-full mx-auto">
-              <div className="flex justify-center">
-                  <Image
-          src={logo}
-          alt="logo"
-          width={200}
-          height={50}
-        />
-              </div>
-              <form onSubmit={handleSubmit} className="space-y-4">
-            
-                <div className="space-y-1">
-                   <Label htmlFor="email">Email</Label>
-                   <Input
-                   id="email"
-                   name="email"
-                   type="email"
-                   placeholder="Enter Your email"
-                   className="bg-[#ffede1]"
-                    value={formData.email}
-                    onChange={handleOnChange}
-                   required
-                   />
-                </div>
-                <div className="space-y-1">
-                   <Label htmlFor="password">Password</Label>
-                   <Input
-                   id="password"
-                   name="password"
-                   type="password"
-                   placeholder="Enter Your Password "
-                   className="bg-[#ffede1]"
-                    value={formData.password}
-                    onChange={handleOnChange}
-                   required
-                   />
-                </div>
-                <Button type="submit" className="cursor-pointer w-full bg-black text-white hover:bg-black transition-colors">Login</Button>
-                <p className="text-center text-[#3f3d56] text-sm">
-                    Don't Have An Account <Link href={'/auth/register'} className="text-[#000] hover:underline font-bold">Sign up</Link></p>
-              </form>
-            </div>
-            </div>
-        </div>
-    )
+interface LoginCardProps {
+  onSwitchToRegister: () => void;
 }
 
-export default LoginPage
+export default function LoginCard({ onSwitchToRegister }: LoginCardProps) {
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const { login, isLoading } = useAuthStore();
+  const router = useRouter();
+
+  const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const check = await protectSignInAction(formData.email);
+    if (!check.success) {
+      toast(check.error);
+      return;
+    }
+
+    const success = await login(formData.email, formData.password);
+    if (success) {
+      toast("Login Successful");
+      const user = useAuthStore.getState().user;
+      router.push(
+        user?.role === "SUPER_ADMIN" ? "/super-admin/products/list" : "/home"
+      );
+    }
+  };
+
+  return (
+    <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center p-4 bg-gray-100">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="login-card"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -30 }}
+          transition={{ duration: 0.3 }}
+          className="w-full max-w-sm"
+        >
+          <Card className="shadow-xl border border-gray-200 bg-white">
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <Store className="h-20 w-20 text-blue-500 stroke-blue-500" />
+              </div>
+              <CardTitle className="font-headline text-2xl">
+                Welcome Back
+              </CardTitle>
+              <CardDescription>
+                Enter your email below to login to your account
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+              <form onSubmit={handleSubmit} className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    required
+                    value={formData.email}
+                    onChange={handleOnChange}
+                    className="bg-gray-100"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <div className="flex items-center">
+                    <Label htmlFor="password">Password</Label>
+                    <Link
+                      href="#"
+                      className="ml-auto inline-block text-sm underline text-gray-600"
+                    >
+                      Forgot your password?
+                    </Link>
+                  </div>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    required
+                    value={formData.password}
+                    onChange={handleOnChange}
+                    className="bg-gray-100"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-blue-500 text-white hover:bg-blue-400"
+                >
+                  {isLoading ? "Logging in..." : "Login"}
+                </Button>
+              </form>
+
+              <div className="mt-4 text-center text-sm">
+                Don't have an account?{" "}
+                <Link
+                  href="/auth/register"
+                  className="underline font-bold text-black hover:opacity-80"
+                >
+                  Sign up
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}

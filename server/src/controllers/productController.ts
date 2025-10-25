@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { AuthenticatedRequest } from "../middleware/authMiddleware";
 import cloudinary from "../config/cloudinary";
 import { prisma } from "../server";
@@ -20,6 +20,8 @@ export const createProduct = async (
       colors,
       price,
       stock,
+      brandCategory,
+      productType,
     } = req.body;
 
     const files = req.files as Express.Multer.File[];
@@ -37,9 +39,11 @@ export const createProduct = async (
       data: {
         name,
         brand,
+        brandCategory,
         description,
         category,
         gender,
+        productType,
         sizes: sizes.split(","),
         colors: colors.split(","),
         price: parseFloat(price),
@@ -125,6 +129,8 @@ export const updateProduct = async (
       price,
       stock,
       rating,
+      brandCategory,
+      productType,
     } = req.body;
 
     const updatedProduct = await prisma.product.update({
@@ -134,6 +140,8 @@ export const updateProduct = async (
         brand,
         description,
         category,
+        brandCategory,
+        productType,
         gender,
         sizes: sizes.split(","),
         colors: colors.split(","),
@@ -149,6 +157,31 @@ export const updateProduct = async (
     res.status(500).json({
       success: false,
       message: "some error occured!",
+    });
+  }
+};
+
+export const getAllProducts = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const products = await prisma.product.findMany({
+      orderBy: {
+        createdAt: "desc", // newest first
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      products,
+    });
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch products",
     });
   }
 };
@@ -178,7 +211,7 @@ export const deleteProduct = async (
 
 // featch products for client
 
-export const getProductsForClient = async (
+export const getFilteredProducts = async (
   req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
