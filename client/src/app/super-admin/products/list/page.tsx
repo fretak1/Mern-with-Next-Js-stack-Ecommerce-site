@@ -10,60 +10,61 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useProductStore } from "@/store/useProductStore";
-import { Pencil, Trash, PlusCircle, Package } from "lucide-react"; // Added PlusCircle and Package icons
+import { Pencil, Trash, PlusCircle, Package } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation"; // Removed useSearchParams as it's not used
-import { useEffect, useRef } from "react"; // Removed useState as it's not used
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react"; // Added useState for modal
 import { toast } from "sonner";
 
 function SuperAdminProductListPage() {
-  const {
-    products,
-    isLoading,
-    fetchAllProductsForAdmin,
-    deleteProduct,
-    // getProductById, // Not used in this component, can be removed if not needed elsewhere
-  } = useProductStore();
+  const { products, isLoading, fetchAllProductsForAdmin, deleteProduct } =
+    useProductStore();
 
   const router = useRouter();
-  const productFetchRef = useRef(false); // Used to prevent double-fetching on re-renders in dev mode
+  const productFetchRef = useRef(false);
+
+  // --- State for modal ---
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
 
   useEffect(() => {
-    // Only fetch products once on mount
     if (!productFetchRef.current) {
       fetchAllProductsForAdmin();
       productFetchRef.current = true;
     }
   }, [fetchAllProductsForAdmin]);
 
-  async function handleDeleteProduct(productId: string) {
-    // Use sonner's built-in confirmation or a custom dialog for better UX
-    // For now, sticking to window.confirm as per original, but improved message.
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this product? This action cannot be undone."
-    );
-    if (confirmed) {
-      try {
-        const result = await deleteProduct(productId);
-        if (result) {
-          toast.success("Product deleted successfully!"); // Using toast.success
-          fetchAllProductsForAdmin(); // Re-fetch to update the list
-        } else {
-          toast.error("Failed to delete product."); // Using toast.error
-        }
-      } catch (error) {
-        toast.error("An error occurred while deleting the product.");
-        console.error("Error deleting product:", error);
-      }
-    }
-  }
+  const openDeleteModal = (productId: string) => {
+    setProductToDelete(productId);
+    setDeleteModalOpen(true);
+  };
 
-  // --- Loading State ---
+  const closeDeleteModal = () => {
+    setProductToDelete(null);
+    setDeleteModalOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!productToDelete) return;
+    try {
+      const result = await deleteProduct(productToDelete);
+      if (result) {
+        toast.success("Product deleted successfully!");
+        fetchAllProductsForAdmin();
+      } else {
+        toast.error("Failed to delete product.");
+      }
+    } catch (error) {
+      toast.error("An error occurred while deleting the product.");
+      console.error("Error deleting product:", error);
+    } finally {
+      closeDeleteModal();
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen-minus-navbar">
-        {" "}
-        {/* Assumed a utility class for full height */}
         <div className="flex items-center space-x-2 text-xl text-gray-600">
           <svg
             className="animate-spin h-6 w-6 text-primary"
@@ -161,8 +162,8 @@ function SuperAdminProductListPage() {
                             <Image
                               src={product.images[0]}
                               alt={`Image of ${product.name}`}
-                              width={56} // Tailwind w-14 * 4
-                              height={56} // Tailwind h-14 * 4
+                              width={56}
+                              height={56}
                               className="object-cover w-full h-full"
                             />
                           ) : (
@@ -218,7 +219,7 @@ function SuperAdminProductListPage() {
                           <Pencil className="h-5 w-5" />
                         </Button>
                         <Button
-                          onClick={() => handleDeleteProduct(product.id)}
+                          onClick={() => openDeleteModal(product.id)}
                           variant="ghost"
                           size="icon"
                           className="text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors duration-200"
@@ -235,6 +236,36 @@ function SuperAdminProductListPage() {
           </div>
         )}
       </div>
+
+      {/* --- Custom Delete Modal --- */}
+      {deleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-lg">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Confirm Delete
+            </h3>
+            <p className="text-sm text-gray-700 mb-6">
+              Are you sure you want to delete this product? This action cannot
+              be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button
+                onClick={closeDeleteModal}
+                variant="outline"
+                className="px-4 py-2 rounded-md"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmDelete}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

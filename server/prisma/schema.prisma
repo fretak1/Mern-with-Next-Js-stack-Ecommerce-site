@@ -17,6 +17,8 @@ model User{
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
     refreshToken String? @unique
+    resetCode String?       
+    resetCodeExpires DateTime?
     cart Cart?
     addresses Address[]
     orders Order[]
@@ -71,7 +73,7 @@ model product{
     category String 
     gender String 
     colors String[]
-    sizes String[] 
+    sizes String[]  @default([])
     stock Int
     soldCount Int
     rating Float? 
@@ -80,6 +82,20 @@ model product{
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
     productType String?
+    reviews       Review[]
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  userId    String
+  comment   String?
+  rating    Int
+  createdAt DateTime @default(now())
+
+  product   product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+   @@unique([userId, productId],name: "user_product_unique")
 }
 
 model Cart {
@@ -90,6 +106,14 @@ model Cart {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 }
+
+model Newsletter {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
 
 
 
@@ -104,7 +128,7 @@ model CartItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([cartId, productId, size, color])
+  @@unique([cartId, productId, color])
 }
 
 model Coupon{

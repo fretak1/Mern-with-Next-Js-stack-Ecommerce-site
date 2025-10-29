@@ -16,7 +16,6 @@ import { useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { protectSignUpAction } from "@/actions/auth";
 import { ArrowRight, Store } from "lucide-react";
 
 export default function RegisterPage() {
@@ -34,11 +33,6 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const check = await protectSignUpAction(formData.email);
-    if (!check.success) {
-      toast(check.error);
-      return;
-    }
 
     const userID = await register(
       formData.name,

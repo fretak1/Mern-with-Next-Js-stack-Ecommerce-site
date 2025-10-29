@@ -43,10 +43,34 @@ function UserCartPage() {
 
   useEffect(() => {
     if (user) fetchCart();
-  }, [fetchCart]);
+  }, [fetchCart, user]);
 
-  if (isLoading || !user) return null;
+  if (isLoading) return null;
 
+  // 🟢 Show message if user not logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-3">
+          Login / Sign Up to Start Shopping
+        </h2>
+        <p className="text-gray-600 mb-6 text-center max-w-md">
+          You need to be logged in to view your cart and checkout your favorite
+          items.
+        </p>
+        <div className="flex gap-4">
+          <Button
+            onClick={() => router.push("/auth/login")}
+            className="bg-blue-500 hover:bg-blue-400"
+          >
+            Login / Sign Up
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // 🟢 Show cart when user is logged in
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="container mx-auto px-6">

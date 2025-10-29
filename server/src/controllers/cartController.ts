@@ -9,43 +9,63 @@ export const addToCart = async (
   try {
     const userId = req.user?.userId;
     const { productId, quantity, size, color } = req.body;
+    console.log(req.body, "incarttttttttt");
 
     if (!userId) {
       res.status(401).json({
         success: false,
         message: "Unauthenticated user",
       });
-
       return;
     }
 
+    if (!productId || !quantity || !color) {
+      res.status(400).json({
+        success: false,
+        message: "Product ID, quantity, and color are required.",
+      });
+      return;
+    }
+
+    // ensure user has a cart
     const cart = await prisma.cart.upsert({
       where: { userId },
       create: { userId },
       update: {},
     });
 
-    const cartItem = await prisma.cartItem.upsert({
+    // find if cart item already exists (ignore size if null)
+    const existingItem = await prisma.cartItem.findFirst({
       where: {
-        cartId_productId_size_color: {
-          cartId: cart.id,
-          productId,
-          size: size || null,
-          color: color || null,
-        },
-      },
-      update: {
-        quantity: { increment: quantity },
-      },
-      create: {
         cartId: cart.id,
         productId,
-        quantity,
-        size,
         color,
+        size: size ?? null,
       },
     });
 
+    let cartItem;
+
+    if (existingItem) {
+      // update quantity if item exists
+      cartItem = await prisma.cartItem.update({
+        where: { id: existingItem.id },
+        data: { quantity: { increment: quantity } },
+      });
+    } else {
+      // create a new cart item
+      cartItem = await prisma.cartItem.create({
+        data: {
+          cartId: cart.id,
+          productId,
+          quantity,
+          size: size ?? null,
+          color,
+        },
+      });
+    }
+
+    // get product details
     const product = await prisma.product.findUnique({
       where: { id: productId },
       select: {
@@ -67,14 +87,14 @@ export const addToCart = async (
     };
 
     res.status(201).json({
-      sucess: true,
+      success: true,
       data: responseItem,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Add to cart error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to Add Cart",
+      message: "Failed to add to cart",
     });
   }
 };

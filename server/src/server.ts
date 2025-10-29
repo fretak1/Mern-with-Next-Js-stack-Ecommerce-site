@@ -12,6 +12,8 @@ import settingsRoutes from "./routes/settingRoutes";
 import cartRoutes from "./routes/cartRoutes";
 import addressRoutes from "./routes/AddressRoutes";
 import orderRoutes from "./routes/orderRoutes";
+import messageRoutes from "./routes/messageRoutes";
+import newsletterRoutes from "./routes/newsLetterRoutes";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -43,6 +45,8 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/address", addressRoutes);
 app.use("/api/order", orderRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/newsletter", newsletterRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello from E-Commerce backend");

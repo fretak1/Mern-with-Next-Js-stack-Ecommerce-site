@@ -3,6 +3,144 @@ import { prisma } from "../server";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcryptjs";
+import { sendEmail } from "../utils/sendEmail";
+
+const RESET_CODE_TTL_MINUTES = 15;
+
+function gen6DigitCode() {
+  // returns string with leading zeros if any
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// POST /auth/forgot-password
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ success: false, message: "Email is required" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      // don't reveal whether email exists — respond success to avoid enumeration
+      return res.status(200).json({
+        success: true,
+        message: "If the email exists, a code was sent.",
+      });
+    }
+
+    const code = gen6DigitCode();
+    const expires = new Date(Date.now() + RESET_CODE_TTL_MINUTES * 60 * 1000);
+
+    await prisma.user.update({
+      where: { email },
+      data: { resetCode: code, resetCodeExpires: expires },
+    });
+
+    const subject = "Your EthioMarket password reset code";
+    const html = `
+      <div style="font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial;line-height:1.4;color:#111">
+        <h2>Reset your EthioMarket password</h2>
+        <p>We received a request to reset the password for <strong>${email}</strong>.</p>
+        <p style="font-size:22px;font-weight:700;margin:18px 0;padding:12px 18px;background:#f3f4f6;border-radius:8px;display:inline-block">
+          ${code}
+        </p>
+        <p>This code will expire in ${RESET_CODE_TTL_MINUTES} minutes.</p>
+        <p>If you didn't request this, you can ignore this email.</p>
+        <p style="margin-top:16px"><a href="${
+          process.env.CLIENT_URL || ""
+        }" style="background:#3b82f6;color:white;padding:10px 14px;border-radius:6px;text-decoration:none">Visit EthioMarket</a></p>
+      </div>
+    `;
+
+    await sendEmail(email, subject, html);
+
+    res.status(200).json({
+      success: true,
+      message: "If the email exists, a code was sent.",
+    });
+  } catch (err) {
+    console.error("forgotPassword error", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to send reset code" });
+  }
+};
+
+// POST /auth/verify-reset-code
+export const verifyResetCode = async (req: Request, res: Response) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      res
+        .status(400)
+        .json({ success: false, message: "Email and code are required" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !user.resetCode || !user.resetCodeExpires) {
+      res
+        .status(400)
+        .json({ success: false, message: "Invalid code or email" });
+      return;
+    }
+
+    if (user.resetCode !== code) {
+      res.status(400).json({ success: false, message: "Invalid code" });
+      return;
+    }
+
+    if (new Date() > user.resetCodeExpires) {
+      res.status(400).json({ success: false, message: "Code expired" });
+      return;
+    }
+
+    // success — allow client to proceed resetting password
+    res.status(200).json({ success: true, message: "Code verified" });
+  } catch (err) {
+    console.error("verifyResetCode error", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// POST /auth/reset-password
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      res.status(400).json({ success: false, message: "Missing fields" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 12);
+
+    await prisma.user.update({
+      where: { email },
+      data: {
+        password: hashed,
+        resetCode: null,
+        resetCodeExpires: null,
+        refreshToken: null, // force re-login
+      },
+    });
+
+    res
+      .status(200)
+      .json({ success: true, message: "Password reset successful" });
+  } catch (err) {
+    console.error("resetPassword error", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
 
 function generateToken(userId: string, email: string, role: string) {
   const accessToken = jwt.sign(
@@ -30,7 +168,7 @@ async function setTokens(
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax", // safer for dev
     path: "/",
-    maxAge: 60 * 60 * 1000, // 1 hour
+    maxAge: 10 * 60 * 1000, // 1 hour
   });
 
   res.cookie("refreshToken", refreshToken, {
@@ -174,4 +312,42 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
     success: true,
     message: "user logged out successfully",
   });
+};
+
+export const checkAccess = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const accessToken = req.cookies?.accessToken;
+    console.log(accessToken);
+    if (!accessToken) {
+      res.status(401).json({ success: false, error: "No access token" });
+      return;
+    }
+
+    let payload: any;
+    try {
+      payload = jwt.verify(accessToken, process.env.JWT_SECRET as string);
+    } catch (err) {
+      res.status(401).json({ success: false, error: "Invalid token" });
+      return;
+    }
+
+    // optional: fetch fresh user from DB (recommended)
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { id: true, name: true, email: true, role: true },
+    });
+
+    if (!user) {
+      res.status(401).json({ success: false, error: "User not found" });
+      return;
+    }
+
+    res.status(200).json({ success: true, user });
+  } catch (error) {
+    console.error("me error", error);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
 };

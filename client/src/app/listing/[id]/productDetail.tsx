@@ -15,18 +15,55 @@ import {
 import Link from "next/link";
 import { Star } from "lucide-react";
 import { toast } from "sonner";
+import { useAuthStore } from "@/store/useAuthStore";
 
 function ProductDetailsContent({ id }: { id: string }) {
   const [product, setProduct] = useState<any>(null);
-  const { getProductById, isLoading, products, fetchAllProductsForAdmin } =
-    useProductStore();
+  const {
+    getProductById,
+    isLoading,
+    products,
+    addReview,
+    fetchAllProductsForAdmin,
+  } = useProductStore();
   const { addToCart } = useCartStore();
   const router = useRouter();
+  const { user } = useAuthStore();
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState(0);
   const [quantity, setQuantity] = useState(1);
+
+  // Review states
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userReview, setUserReview] = useState<{
+    rating: number;
+    comment: string;
+  } | null>(null);
+
+  // After fetching product in useEffect, check if user reviewed
+  useEffect(() => {
+    if (product && user) {
+      const existingReview = product.reviews.find(
+        (r: any) => r.userId === user.id
+      );
+      if (existingReview) {
+        setUserReview({
+          rating: existingReview.rating,
+          comment: existingReview.comment || "",
+        });
+        setRating(existingReview.rating); // prefill rating
+        setComment(existingReview.comment || ""); // prefill comment
+      } else {
+        setUserReview(null);
+        setRating(0);
+        setComment("");
+      }
+    }
+  }, [product, user]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -37,14 +74,11 @@ function ProductDetailsContent({ id }: { id: string }) {
     fetchProduct();
   }, [id, getProductById, router]);
 
-  // useEffect(() => {
-  //   fetchAllProductsForAdmin();
-  // }, []);
-
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product) return;
+    if (!user) return router.push("/auth/login");
 
-    addToCart({
+    const addToCartResult = await addToCart({
       productId: product.id,
       name: product.name,
       price: product.price,
@@ -54,10 +88,63 @@ function ProductDetailsContent({ id }: { id: string }) {
       quantity,
     });
 
-    setSelectedColor(0);
-    setSelectedSize("");
-    setQuantity(1);
-    toast.success("Product added successfully to cart");
+    if (addToCartResult) {
+      setSelectedColor(0);
+      setSelectedSize("");
+      setQuantity(1);
+      toast.success("Product added successfully to cart");
+    }
+  };
+
+  const handleReviewSubmit = async () => {
+    if (!user) return router.push("/auth/login");
+
+    if (!rating || !comment.trim()) {
+      toast.error("Please provide both rating and comment.");
+      return;
+    }
+
+    if (!product) return;
+
+    setIsSubmitting(true);
+    try {
+      const result = await addReview(product.id, { rating, comment });
+
+      if (result?.success) {
+        toast.success(result.message);
+
+        const updatedProduct = await getProductById(id);
+        if (!updatedProduct) {
+          toast.error("Failed to fetch updated product.");
+          return;
+        }
+
+        setProduct(updatedProduct);
+
+        // Find the logged-in user's review
+        const updatedReview = updatedProduct.reviews.find(
+          (r) => r.userId === user.id
+        );
+
+        if (updatedReview) {
+          setUserReview({
+            rating: updatedReview.rating,
+            comment: updatedReview.comment || "",
+          });
+
+          // Optional: reset rating/comment inputs to match the user's current review
+          setRating(updatedReview.rating);
+          setComment(updatedReview.comment || "");
+        }
+      } else {
+        toast.error(result?.message || "Failed to submit review.");
+      }
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      toast.error("An error occurred while submitting your review.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!product || isLoading) return <ProductDetailSkeleton />;
@@ -89,12 +176,17 @@ function ProductDetailsContent({ id }: { id: string }) {
               ))}
             </div>
 
-            <div className="flex-1 bg-white rounded-2xl shadow-md overflow-hidden">
+            <div className="flex-1 relative bg-white rounded-2xl shadow-md overflow-hidden">
               <img
                 src={product.images[selectedImage]}
                 alt={product.name}
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
               />
+              {product.stock < 10 && (
+                <span className="absolute top-2 right-2 bg-red-600 text-white text-xl font-semibold px-2 py-1 rounded">
+                  Only {product.stock} left!
+                </span>
+              )}
             </div>
           </div>
 
@@ -105,6 +197,23 @@ function ProductDetailsContent({ id }: { id: string }) {
                 {product.name}
               </h1>
               <p className="text-gray-500 text-sm mb-4">{product.category}</p>
+
+              {/* ⭐ Product Rating Section */}
+              <div className="flex items-center gap-2 mb-2">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`h-5 w-5 ${
+                      i < Math.round(product.rating || 0)
+                        ? "text-blue-500 fill-blue-500"
+                        : "text-gray-300"
+                    }`}
+                  />
+                ))}
+                <span className="text-sm text-gray-600">
+                  {product.rating ? product.rating.toFixed(1) : "No rating yet"}
+                </span>
+              </div>
               <span className="text-3xl font-semibold text-blue-600">
                 ${product.price.toFixed(2)}
               </span>
@@ -205,12 +314,82 @@ function ProductDetailsContent({ id }: { id: string }) {
                 </AccordionContent>
               </AccordionItem>
 
+              {/* === REVIEWS === */}
               <AccordionItem value="reviews">
                 <AccordionTrigger className="font-semibold text-gray-900 hover:text-blue-600">
-                  Reviews (0)
+                  Reviews
                 </AccordionTrigger>
-                <AccordionContent className="text-gray-600 leading-relaxed">
-                  No reviews yet.
+                <AccordionContent className="text-gray-600 leading-relaxed space-y-4">
+                  {/* Show existing review if present */}
+                  {userReview ? (
+                    <div className="border-t border-gray-200 pt-4">
+                      <h4 className="font-semibold mb-2 text-gray-800">
+                        Your Review
+                      </h4>
+                      <div className="flex gap-2 mb-2">
+                        {[1, 2, 3, 4, 5].map((r) => (
+                          <Star
+                            key={r}
+                            onClick={() => setRating(r)}
+                            className={`h-6 w-6 cursor-pointer transition ${
+                              r <= rating
+                                ? "text-blue-500 fill-blue-500"
+                                : "text-gray-300"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <textarea
+                        className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500"
+                        rows={3}
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                      />
+                      <Button
+                        onClick={handleReviewSubmit}
+                        disabled={isSubmitting}
+                        variant="outline"
+                        className="mt-3 text-sm"
+                      >
+                        {isSubmitting ? "Updating..." : "Update Review"}
+                      </Button>
+                    </div>
+                  ) : (
+                    // Show form for new review if user hasn't reviewed yet
+                    <div className="border-t border-gray-200 pt-4">
+                      <h4 className="font-semibold mb-2 text-gray-800">
+                        Write a Review
+                      </h4>
+                      <div className="flex gap-2 mb-2">
+                        {[1, 2, 3, 4, 5].map((r) => (
+                          <Star
+                            key={r}
+                            onClick={() => setRating(r)}
+                            className={`h-6 w-6 cursor-pointer transition ${
+                              r <= rating
+                                ? "text-yellow-400 fill-yellow-400"
+                                : "text-gray-300"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <textarea
+                        className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500"
+                        rows={3}
+                        placeholder="Share your thoughts..."
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                      />
+                      <Button
+                        onClick={handleReviewSubmit}
+                        disabled={isSubmitting}
+                        variant="outline"
+                        className="mt-3 text-sm"
+                      >
+                        {isSubmitting ? "Submitting..." : "Submit Review"}
+                      </Button>
+                    </div>
+                  )}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

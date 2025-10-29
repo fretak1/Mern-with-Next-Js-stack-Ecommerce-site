@@ -27,13 +27,15 @@ import {
   Star,
 } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 function ProductListingPage() {
   const searchParams = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
   const initialCategory = searchParams.get("category");
   const initialBrand = searchParams.get("brand");
+  const productType = searchParams.get("type") || "";
 
   const [priceRange, setPriceRange] = useState([0, 100000]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
@@ -46,6 +48,7 @@ function ProductListingPage() {
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const router = useRouter();
 
   const {
     products,
@@ -69,6 +72,8 @@ function ProductListingPage() {
       maxPrice: priceRange[1],
       sortBy,
       sortOrder,
+      search: searchQuery,
+      type: productType,
     });
   };
 
@@ -83,6 +88,7 @@ function ProductListingPage() {
     priceRange,
     sortBy,
     sortOrder,
+    searchQuery,
   ]);
 
   const handleToggleFilter = (
@@ -205,6 +211,8 @@ function ProductListingPage() {
     </div>
   );
 
+  console.log(products.length, "ddddddd");
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Main content */}
@@ -259,6 +267,10 @@ function ProductListingPage() {
               <div className="text-center py-20 text-gray-500">Loading...</div>
             ) : error ? (
               <div className="text-center py-20 text-red-500">{error}</div>
+            ) : products.length === 0 ? (
+              <div className="text-center py-20 text-gray-500">
+                No products found.
+              </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {products.map((product) => (
@@ -272,6 +284,11 @@ function ProductListingPage() {
                         alt={product.name}
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                       />
+                      {product.stock < 10 && (
+                        <span className="absolute top-2 right-2 bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded">
+                          Only {product.stock} left!
+                        </span>
+                      )}
                     </div>
                     <div className="p-4">
                       <h3 className="font-headline text-lg font-medium leading-tight">
@@ -286,17 +303,31 @@ function ProductListingPage() {
                         {product.category}
                       </p>
                       <div className="flex items-center justify-between mt-3">
-                        <p className="text-xl font-semibold text-foreground">
-                          ${product.price.toFixed(2)}
+                        <p className="text-xl font-semibold text-gray-900">
+                          {product.price.toFixed(0)} ETB
                         </p>
-                        <div className="flex items-center text-blue-500 gap-0.5">
-                          <Star className="h-5 w-5 " fill="currentColor" />
-                          <Star className="h-5 w-5" />
-                          <Star className="h-5 w-5" />
-                          <Star className="h-5 w-5" />
+                        <div className="flex items-center gap-2 ">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-5 w-5 ${
+                                i < Math.round(product.rating || 0)
+                                  ? "text-blue-500 fill-blue-500"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                          <span className="text-sm text-gray-600">
+                            {product.rating
+                              ? `(${product.rating.toFixed(1)})`
+                              : ""}
+                          </span>
                         </div>
                       </div>
-                      <Button className="bg-blue-500 w-full hover:!bg-blue-400 mt-5">
+                      <Button
+                        onClick={() => router.push(`/listing/${product.id}`)}
+                        className="bg-blue-500 w-full hover:!bg-blue-400 mt-5"
+                      >
                         Add To Cart
                       </Button>
                     </div>

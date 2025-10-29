@@ -19,7 +19,7 @@ interface CartStore {
   isLoading: boolean;
   error: string | null;
   fetchCart: () => Promise<void>;
-  addToCart: (item: Omit<CartItem, "id">) => Promise<void>;
+  addToCart: (item: Omit<CartItem, "id">) => Promise<boolean>;
   removeFromCart: (id: string) => Promise<void>;
   updateCartQuantity: (id: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -74,6 +74,8 @@ export const useCartStore = create<CartStore>((set, get) => {
           items: [...state.items, response.data.data],
           isLoading: false,
         }));
+
+        return response.data.success;
       } catch (error) {
         set({ error: "Failed to add cart", isLoading: false });
         console.log(error);

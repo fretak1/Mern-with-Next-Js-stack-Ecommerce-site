@@ -2,6 +2,8 @@ import { API_ROUTES } from "@/utils/api";
 import axios from "axios";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { toast } from "sonner"; // ✅ Make sure you have sonner installed: npm i sonner
+
 type User = {
   id: string;
   name: string | null;
@@ -20,7 +22,12 @@ type AuthStore = {
   ) => Promise<string | null>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  refreshAccessToken: () => Promise<Boolean>;
+  fetchCurrentUser: () => Promise<void>;
+
+  // Forgot password flow
+  sendResetCode: (email: string) => Promise<boolean>;
+  verifyResetCode: (email: string, code: string) => Promise<boolean>;
+  resetPassword: (email: string, newPassword: string) => Promise<boolean>;
 };
 
 const axiosInstance = axios.create({
@@ -34,6 +41,8 @@ export const useAuthStore = create<AuthStore>()(
       user: null,
       isLoading: false,
       error: null,
+
+      // ✅ Register
       register: async (name, email, password) => {
         set({ isLoading: true, error: null });
         try {
@@ -42,7 +51,6 @@ export const useAuthStore = create<AuthStore>()(
             email,
             password,
           });
-
           set({ isLoading: false });
           return response.data.userId;
         } catch (error) {
@@ -52,10 +60,12 @@ export const useAuthStore = create<AuthStore>()(
               ? error?.response?.data?.error || "Registration failed"
               : "Registration failed",
           });
-
+          toast.error("Registration failed");
           return null;
         }
       },
+
+      // ✅ Login
       login: async (email, password) => {
         set({ isLoading: true, error: null });
         try {
@@ -63,7 +73,6 @@ export const useAuthStore = create<AuthStore>()(
             email,
             password,
           });
-
           set({ isLoading: false, user: response.data.user });
           return true;
         } catch (error) {
@@ -73,32 +82,89 @@ export const useAuthStore = create<AuthStore>()(
               ? error?.response?.data?.error || "Login failed"
               : "Login failed",
           });
-
+          toast.error("Login failed");
           return false;
         }
       },
-      logout: async () => {
+
+      // ✅ Send reset code
+      sendResetCode: async (email: string) => {
         set({ isLoading: true, error: null });
         try {
-          await axiosInstance.post("/logout");
-          set({ user: null, isLoading: false });
-          localStorage.removeItem("auth-storage");
+          await axiosInstance.post("/forgot-password", { email });
+          set({ isLoading: false });
+          toast.success("Reset code sent to your email");
+          return true;
         } catch (error) {
           set({
             isLoading: false,
             error: axios.isAxiosError(error)
-              ? error?.response?.data?.error || "Logout failed"
-              : "Logout failed",
+              ? error?.response?.data?.error || "Failed to send reset code"
+              : "Failed to send reset code",
           });
+          toast.error("Failed to send reset code");
+          return false;
         }
       },
-      refreshAccessToken: async () => {
+
+      // ✅ Verify code
+      verifyResetCode: async (email: string, code: string) => {
+        set({ isLoading: true, error: null });
         try {
-          await axiosInstance.post("/refresh-token");
+          await axiosInstance.post("/verify-reset-code", { email, code });
+          set({ isLoading: false });
           return true;
-        } catch (e) {
-          console.error(e);
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: axios.isAxiosError(error)
+              ? error?.response?.data?.error || "Invalid or expired code"
+              : "Invalid or expired code",
+          });
+          toast.error("Invalid or expired code");
           return false;
+        }
+      },
+
+      // ✅ Reset password
+      resetPassword: async (email, newPassword) => {
+        set({ isLoading: true, error: null });
+        try {
+          await axiosInstance.post("/reset-password", { email, newPassword });
+          set({ isLoading: false });
+          return true;
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: axios.isAxiosError(error)
+              ? error?.response?.data?.error || "Password reset failed"
+              : "Password reset failed",
+          });
+          toast.error("Password reset failed");
+          return false;
+        }
+      },
+
+      // ✅ Logout
+      logout: async () => {
+        try {
+          await axiosInstance.post("/logout");
+        } catch {}
+        set({ user: null });
+        localStorage.removeItem("auth-storage");
+        toast.success("Logged out successfully");
+      },
+
+      // ✅ Fetch user
+      fetchCurrentUser: async () => {
+        try {
+          const response = await axiosInstance.get("/check-access", {
+            withCredentials: true,
+          });
+          set({ user: response.data.user });
+        } catch (err: any) {
+          console.log("Fetch /check-access response failed");
+          set({ user: null });
         }
       },
     }),

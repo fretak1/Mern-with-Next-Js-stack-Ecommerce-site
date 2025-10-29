@@ -2,6 +2,7 @@ import express from "express";
 import { authenticateJwt, isSuperAdmin } from "../middleware/authMiddleware";
 import { upload } from "../middleware/uploadMiddleware";
 import {
+  addProductReview,
   createProduct,
   deleteProduct,
   fetxhAllProductsForAdmin,
@@ -29,8 +30,9 @@ router.get(
 );
 router.get("/fetch-filtered-products", getFilteredProducts);
 router.get("/getAllProducts", getAllProducts);
-router.get("/:id", authenticateJwt, getProductById);
+router.get("/:id", getProductById);
 router.put("/:id", authenticateJwt, isSuperAdmin, updateProduct);
 router.delete("/:id", authenticateJwt, isSuperAdmin, deleteProduct);
+router.post("/:productId/review", authenticateJwt, addProductReview);
 
 export default router;

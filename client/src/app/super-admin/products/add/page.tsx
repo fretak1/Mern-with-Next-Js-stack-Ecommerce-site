@@ -1,6 +1,5 @@
 "use client";
 
-import { protectProductFormAction } from "@/actions/product";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,9 +60,7 @@ function SuperAdminManageProductPage() {
   const { createProduct, isLoading, updateProduct, getProductById } =
     useProductStore();
 
-    useEffect(() => {
-
-    },)
+  useEffect(() => {});
   useEffect(() => {
     if (isEditMode) {
       getProductById(getCurrentEditedProductId).then((product) => {
@@ -123,13 +120,6 @@ function SuperAdminManageProductPage() {
 
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    const checkSanitization = await protectProductFormAction();
-
-    if (!checkSanitization.success) {
-      toast(checkSanitization.error);
-      return;
-    }
 
     const formDataObj = new FormData();
     Object.entries(formState).forEach(([key, value]) => {

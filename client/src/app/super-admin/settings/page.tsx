@@ -15,14 +15,12 @@ function SuperAdminSettingPage() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const { products, fetchAllProductsForAdmin } = useProductStore();
   const {
-    featuredProducts,
     banners,
     isLoading, // This isLoading is for the entire settings store operations
     error,
     featchBanners,
-    featchFeaturedProducts,
+
     addBanners,
-    updateFeaturedProducts,
   } = useSettingsStore();
 
   const [isSavingBanners, setIsSavingBanners] = useState(false);
@@ -35,10 +33,9 @@ function SuperAdminSettingPage() {
     if (!pageLoadRef.current) {
       featchBanners();
       fetchAllProductsForAdmin();
-      featchFeaturedProducts();
       pageLoadRef.current = true;
     }
-  }, [fetchAllProductsForAdmin, featchFeaturedProducts, featchBanners]);
+  }, [fetchAllProductsForAdmin, featchBanners]);
 
   // Handle errors from the store
   useEffect(() => {
@@ -89,22 +86,7 @@ function SuperAdminSettingPage() {
     }
 
     // Handle featured products update
-    setIsSavingFeaturedProducts(true);
-    const result = await updateFeaturedProducts(selectedProducts);
-    if (result) {
-      toast.success("Featured products updated successfully!");
-      featchFeaturedProducts();
-    } else {
-      toast.error("Failed to update featured products.");
-    }
-    setIsSavingFeaturedProducts(false);
   };
-
-  useEffect(() => {
-    if (featuredProducts.length > 0 && selectedProducts.length === 0) {
-      setSelectedProducts(featuredProducts.map((pro) => pro.id));
-    }
-  }, [featuredProducts, selectedProducts.length]);
 
   return (
     <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8">
@@ -201,59 +183,6 @@ function SuperAdminSettingPage() {
                 </div>
               </div>
             )}
-          </section>
-
-          {/* Featured Products Section */}
-          <section>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">
-              Featured Products
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Select up to 8 products to feature on the client home page.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {products.map((product) => (
-                <div
-                  className={`relative p-5 border rounded-lg transition-all duration-200 ${
-                    selectedProducts.includes(product.id)
-                      ? "border-blue-500 bg-blue-50 shadow-md" // Blue border and light blue background for selected
-                      : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
-                  }`}
-                  key={product.id}
-                >
-                  <div className="absolute top-3 right-3">
-                    <Checkbox
-                      checked={selectedProducts.includes(product.id)}
-                      onCheckedChange={() => handleProductSelection(product.id)}
-                      className="h-5 w-5 border-gray-400
-                        data-[state=checked]:bg-blue-500          
-                        data-[state=checked]:border-blue-500
-                        data-[state=checked]:text-white" // Make checkbox blue when checked
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <div className="w-full h-40 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-                      {product.images && product.images.length > 0 ? (
-                        <img
-                          src={product.images[0]}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <ImageIcon className="h-10 w-10 text-gray-400" />
-                      )}
-                    </div>
-                    <h3 className="font-semibold text-lg text-gray-800">
-                      {product.name}
-                    </h3>
-                    <p className="text-sm text-gray-500">{product.category}</p>
-                    <p className="font-bold text-xl text-gray-900">
-                      ${product.price.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </section>
 
           <div className="mt-8">

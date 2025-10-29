@@ -25,6 +25,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const categoriesWithIcon = [
   { id: "handBags", label: "Hand Bags", icon: HandbagIcon },
@@ -39,7 +40,7 @@ const categoriesWithIcon = [
 const PrevArrow = ({ onClick }: { onClick?: () => void }) => (
   <button
     onClick={onClick}
-    className="absolute -left-5 top-1/2 transform -translate-y-1/2 z-10 bg-blue-500 hover:bg-blue-400 text-white p-3 rounded-full shadow-md transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100"
+    className="absolute -left-10 top-1/2 transform -translate-y-1/2 z-10 bg-blue-500 hover:bg-blue-400 text-white p-3 rounded-full shadow-md transition-all duration-300 hover:scale-110 "
     aria-label="Previous"
   >
     <ChevronLeft className="w-5 h-5" />
@@ -49,7 +50,7 @@ const PrevArrow = ({ onClick }: { onClick?: () => void }) => (
 const NextArrow = ({ onClick }: { onClick?: () => void }) => (
   <button
     onClick={onClick}
-    className="absolute -right-5 top-1/2 transform -translate-y-1/2 z-10 bg-blue-500 hover:bg-blue-400 text-white p-3 rounded-full shadow-md transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100"
+    className="absolute -right-10 top-1/2 transform -translate-y-1/2 z-10 bg-blue-500 hover:bg-blue-400 text-white p-3 rounded-full shadow-md transition-all duration-300 hover:scale-110 "
     aria-label="Next"
   >
     <ChevronRight className="w-5 h-5" />
@@ -164,6 +165,12 @@ function HomePage() {
     router.push(`/listing?brand=${encodeURIComponent(brand)}`);
   };
 
+  const featuredProducts = products.filter(
+    (product) => product.productType === "featured"
+  );
+
+  const newProducts = products.filter((p) => p.productType === "new");
+
   return (
     <div className="min-h-screen bg-gray-50 antialiased">
       {/* HERO SLIDER SECTION */}
@@ -222,24 +229,198 @@ function HomePage() {
       </section>
 
       {/* FEATURED PRODUCTS SECTION */}
+      {featuredProducts.length > 0 && (
+        <section className="py-20 bg-gray-50">
+          <div className="container mx-auto px-6">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="font-headline text-3xl md:text-4xl font-bold text-gray-800">
+                Featured Products
+              </h2>
+              <Button
+                asChild
+                className="!bg-blue-500 hover:!bg-blue-400 text-white transition-colors"
+              >
+                <Link href="/listing?type=featured" className="block px-6 py-2">
+                  View All
+                </Link>
+              </Button>
+            </div>
+
+            <div className=" relative">
+              {isSlider ? (
+                <Slider
+                  dots={false}
+                  infinite={true}
+                  speed={600}
+                  slidesToShow={4}
+                  slidesToScroll={1}
+                  autoplay={true}
+                  autoplaySpeed={3500}
+                  arrows={true}
+                  prevArrow={<PrevArrow />}
+                  nextArrow={<NextArrow />}
+                  responsive={[
+                    { breakpoint: 1024, settings: { slidesToShow: 3 } },
+                    { breakpoint: 768, settings: { slidesToShow: 2 } },
+                    { breakpoint: 480, settings: { slidesToShow: 1 } },
+                  ]}
+                >
+                  {featuredProducts.map((product, index) => (
+                    <motion.div
+                      key={index}
+                      whileHover={{ scale: 1.03 }}
+                      transition={{ duration: 0.3 }}
+                      className="px-3"
+                    >
+                      <div className="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl bg-white transition-shadow duration-300 cursor-pointer">
+                        <div className="relative aspect-square overflow-hidden">
+                          <img
+                            src={product.images[0]}
+                            alt={product.name}
+                            className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                          />
+                          {product.stock < 10 && (
+                            <span className="absolute top-2 right-2 bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded">
+                              Only {product.stock} left!
+                            </span>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-headline text-lg font-medium leading-tight">
+                            <Link
+                              href={`/products/${product.id}`}
+                              className="hover:text-blue-500 transition-colors"
+                            >
+                              {product.name}
+                            </Link>
+                          </h3>
+                          <p className="text-sm text-gray-500 mt-1">
+                            {product.category}
+                          </p>
+                          <div className="flex items-center justify-between mt-3">
+                            <p className="text-lg font-semibold text-gray-900">
+                              {product.price.toFixed(0)} ETB
+                            </p>
+                            <div className="flex items-center gap-2 ">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`h-5 w-5 ${
+                                    i < Math.round(product.rating || 0)
+                                      ? "text-blue-500 fill-blue-500"
+                                      : "text-gray-300"
+                                  }`}
+                                />
+                              ))}
+                              <span className="text-sm text-gray-600">
+                                {product.rating
+                                  ? `(${product.rating.toFixed(1)})`
+                                  : ""}
+                              </span>
+                            </div>
+                          </div>
+                          <Button
+                            onClick={() =>
+                              router.push(`/listing/${product.id}`)
+                            }
+                            className="bg-blue-500 w-full hover:!bg-blue-400 mt-5"
+                          >
+                            Add To Cart
+                          </Button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </Slider>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {featuredProducts.map((product, index) => (
+                    <motion.div
+                      key={index}
+                      whileHover={{ scale: 1.03 }}
+                      transition={{ duration: 0.3 }}
+                      className="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl bg-white transition-shadow duration-300 cursor-pointer"
+                    >
+                      <div className="relative aspect-square overflow-hidden">
+                        <img
+                          src={product.images[0]}
+                          alt={product.name}
+                          className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                        />
+                        {product.stock < 10 && (
+                          <span className="absolute top-2 right-2 bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded">
+                            Only {product.stock} left!
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-headline text-lg font-medium leading-tight">
+                          <Link
+                            href={`/products/${product.id}`}
+                            className="hover:text-blue-500 transition-colors"
+                          >
+                            {product.name}
+                          </Link>
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {product.category}
+                        </p>
+                        <div className="flex items-center justify-between mt-3">
+                          <p className="text-xl font-semibold text-gray-900">
+                            {product.price.toFixed(0)} ETB
+                          </p>
+                          <div className="flex items-center gap-2 ">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`h-5 w-5 ${
+                                  i < Math.round(product.rating || 0)
+                                    ? "text-blue-500 fill-blue-500"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                            ))}
+                            <span className="text-sm text-gray-600">
+                              {product.rating
+                                ? `(${product.rating.toFixed(1)})`
+                                : ""}
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => router.push(`/listing/${product.id}`)}
+                          className="bg-blue-500 w-full hover:!bg-blue-400 mt-5"
+                        >
+                          Add To Cart
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between mb-8">
             <h2 className="font-headline text-3xl md:text-4xl font-bold text-gray-800">
-              Featured Products
+              New Arrivals
             </h2>
             <Button
               asChild
               className="!bg-blue-500 hover:!bg-blue-400 text-white transition-colors"
             >
-              <Link href="/listing" className="block px-6 py-2">
+              <Link href="/listing?type=new" className="block px-6 py-2">
                 View All
               </Link>
             </Button>
           </div>
 
-          <div className="group relative">
-            {isSlider ? (
+          <div className="relative">
+            {newProducts.length > 0 ? (
               <Slider
                 dots={false}
                 infinite={true}
@@ -257,20 +438,28 @@ function HomePage() {
                   { breakpoint: 480, settings: { slidesToShow: 1 } },
                 ]}
               >
-                {products.map((product, index) => (
+                {newProducts.map((product) => (
                   <motion.div
-                    key={index}
+                    key={product.id}
                     whileHover={{ scale: 1.03 }}
                     transition={{ duration: 0.3 }}
                     className="px-3"
                   >
-                    <div className="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl bg-white transition-shadow duration-300 cursor-pointer">
+                    <div className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-xl bg-white transition-shadow duration-300 cursor-pointer">
                       <div className="relative aspect-square overflow-hidden">
                         <img
-                          src={product.images[0]}
+                          src={product.images?.[0]}
                           alt={product.name}
                           className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
                         />
+                        <span className="absolute top-2 left-2 bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded">
+                          NEW
+                        </span>
+                        {product.stock < 10 && (
+                          <span className="absolute top-2 right-2 bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded">
+                            Only {product.stock} left!
+                          </span>
+                        )}
                       </div>
                       <div className="p-4">
                         <h3 className="font-headline text-lg font-medium leading-tight">
@@ -286,16 +475,24 @@ function HomePage() {
                         </p>
                         <div className="flex items-center justify-between mt-3">
                           <p className="text-xl font-semibold text-gray-900">
-                            ${product.price.toFixed(2)}
+                            {product.price.toFixed(0)} ETB
                           </p>
-                          <div className="flex items-center text-blue-500 gap-0.5">
-                            {[...Array(4)].map((_, i) => (
+                          <div className="flex items-center gap-2 ">
+                            {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
-                                className="h-5 w-5"
-                                fill="currentColor"
+                                className={`h-5 w-5 ${
+                                  i < Math.round(product.rating || 0)
+                                    ? "text-blue-500 fill-blue-500"
+                                    : "text-gray-300"
+                                }`}
                               />
                             ))}
+                            <span className="text-sm text-gray-600">
+                              {product.rating
+                                ? `(${product.rating.toFixed(1)})`
+                                : ""}
+                            </span>
                           </div>
                         </div>
                         <Button
@@ -310,57 +507,7 @@ function HomePage() {
                 ))}
               </Slider>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {products.map((product, index) => (
-                  <motion.div
-                    key={index}
-                    whileHover={{ scale: 1.03 }}
-                    transition={{ duration: 0.3 }}
-                    className="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl bg-white transition-shadow duration-300 cursor-pointer"
-                  >
-                    <div className="relative aspect-square overflow-hidden">
-                      <img
-                        src={product.images[0]}
-                        alt={product.name}
-                        className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-headline text-lg font-medium leading-tight">
-                        <Link
-                          href={`/products/${product.id}`}
-                          className="hover:text-blue-500 transition-colors"
-                        >
-                          {product.name}
-                        </Link>
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {product.category}
-                      </p>
-                      <div className="flex items-center justify-between mt-3">
-                        <p className="text-xl font-semibold text-gray-900">
-                          ${product.price.toFixed(2)}
-                        </p>
-                        <div className="flex items-center text-blue-500 gap-0.5">
-                          {[...Array(4)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className="h-5 w-5"
-                              fill="currentColor"
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <Button
-                        onClick={() => router.push(`/listing/${product.id}`)}
-                        className="bg-blue-500 w-full hover:!bg-blue-400 mt-5"
-                      >
-                        Add To Cart
-                      </Button>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+              <p>No new products found.</p>
             )}
           </div>
         </div>
@@ -410,7 +557,10 @@ function HomePage() {
                 {section.title}
               </h3>
 
-              <Slider {...brandSliderSettings(section.brands.length)}>
+              <Slider
+                {...brandSliderSettings(section.brands.length)}
+                arrows={false}
+              >
                 {section.brands.map((brand) => (
                   <motion.div
                     key={brand.name}

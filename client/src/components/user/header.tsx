@@ -1,19 +1,18 @@
 "use client";
 
 import {
-  ArrowDown,
   ArrowLeft,
   ChevronDown,
   Heart,
   Menu,
   Search,
-  ShoppingBag,
   ShoppingCart,
   Store,
   User,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+// ⭐️ UPDATED IMPORT ⭐️
+import { useRouter, usePathname } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,30 +22,164 @@ import {
 import { Button } from "../ui/button";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useCartStore } from "@/store/useCartStore";
 import { Input } from "../ui/input";
+import { useProductStore } from "@/store/useProductStore";
+
+// --- Type Definitions ---
+type Product = {
+  id: string;
+  name: string;
+  category?: string;
+  price?: number;
+  images?: string[];
+};
 
 const navItems = [
-  { title: "HOME", to: "/" },
+  { title: "HOME", to: "/home" },
   { title: "PRODUCTS", to: "/listing" },
 ];
+// ------------------------
 
 function Header() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
+  // ⭐️ GET PATHNAME ⭐️
+  const pathname = usePathname();
+
+  // Mobile Menu States
   const [mobileView, setMobileView] = useState<"menu" | "account">("menu");
   const [showSheetDialog, setShowSheetDialog] = useState(false);
+
+  // Cart State (Zustand store)
   const { fetchCart, items } = useCartStore();
 
+  // Product State (Zustand store)
+  const { products, getAllProducts } = useProductStore() as {
+    products: Product[];
+    getAllProducts: () => void;
+  };
+
+  // Search States and Ref
+  const [searchText, setSearchText] = useState("");
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [inputIsFocused, setInputIsFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const { fetchCurrentUser } = useAuthStore();
+  const [fetched, setFetched] = useState(false);
+
+  useEffect(() => {
+    // On app start, try to fetch current user (server will use httpOnly cookie)
+    fetchCurrentUser();
+  }, [fetchCurrentUser]);
+  // --- Effects ---
+
+  // 1. Fetch Cart
   useEffect(() => {
     if (user) fetchCart();
   }, [fetchCart, user]);
 
-  async function handleLogout() {
-    await logout();
-  }
+  // 2. Fetch All Products for search suggestions
 
+  useEffect(() => {
+    if (!fetched) {
+      getAllProducts();
+      setFetched(true);
+    }
+  }, [getAllProducts, fetched]);
+
+  // 3. Manage searchText based on URL pathname (FIXED for App Router)
+  useEffect(() => {
+    // Only run in the browser
+    if (typeof window !== "undefined") {
+      const currentPath = pathname; // Use the value from the hook
+
+      if (currentPath.startsWith("/listing")) {
+        // Case 1: On the listing page, read search term from URL
+        const params = new URLSearchParams(window.location.search);
+        const searchParam = params.get("search");
+
+        const newSearchText = searchParam
+          ? decodeURIComponent(searchParam)
+          : "";
+        setSearchText(newSearchText);
+
+        setShowSuggestions(false);
+      } else {
+        // Case 2: On any other page, clear the input
+        if (searchText !== "") {
+          setSearchText("");
+        }
+        setShowSuggestions(false);
+      }
+    }
+    // ⭐️ DEPENDENCY CHANGED TO pathname ⭐️
+  }, [pathname]);
+
+  // 4. Filter suggestions and manage visibility dynamically
+  useEffect(() => {
+    const query = searchText.trim().toLowerCase();
+
+    if (query === "") {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const filtered = products.filter((p) =>
+      p.name.toLowerCase().includes(query)
+    );
+
+    setSuggestions(filtered.slice(0, 5));
+
+    // Only show if results found AND input is currently focused
+    if (filtered.length > 0 && inputIsFocused) {
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+
+    // CRITICAL DEPENDENCY: inputIsFocused ensures this runs when focus changes
+  }, [searchText, products, inputIsFocused]);
+
+  // --- Handlers ---
+
+  const handleLogout = async () => await logout();
+
+  const handleSelectSuggestion = (name: string) => {
+    setSearchText(name);
+    router.push(`/listing?search=${encodeURIComponent(name)}`);
+    setSuggestions([]);
+    setInputIsFocused(false);
+    setShowSuggestions(false);
+  };
+
+  const handleSearch = () => {
+    if (searchText.trim() !== "") {
+      router.push(`/listing?search=${encodeURIComponent(searchText.trim())}`);
+      setSuggestions([]);
+      setInputIsFocused(false);
+      setShowSuggestions(false);
+      searchInputRef.current?.blur();
+    }
+  };
+
+  const handleSearchInputFocus = () => {
+    setInputIsFocused(true);
+  };
+
+  const handleSearchInputBlur = () => {
+    setTimeout(() => {
+      if (document.activeElement !== searchInputRef.current) {
+        setInputIsFocused(false);
+        setShowSuggestions(false);
+      }
+    }, 150);
+  };
+
+  // --- Mobile Renderer ---
   const renderMobileMenuItems = () => {
     switch (mobileView) {
       case "account":
@@ -89,8 +222,8 @@ function Header() {
               ) : (
                 <Button
                   onClick={() => {
-                    setShowSheetDialog(false); // Close the sheet
-                    router.push("/auth/login"); // Navigate to login page
+                    setShowSheetDialog(false);
+                    router.push("/auth/login");
                   }}
                   className="w-full justify-start mt-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold"
                 >
@@ -133,7 +266,7 @@ function Header() {
                 }}
                 className="w-full justify-start text-base font-semibold bg-gray-100 text-gray-900 hover:bg-gray-200"
               >
-                <ShoppingBag className="mr-2 h-5 w-5" />
+                <ShoppingCart className="mr-2 h-5 w-5" />
                 Cart ({items?.length || 0})
               </Button>
             </div>
@@ -141,6 +274,7 @@ function Header() {
         );
     }
   };
+  // -------------------------
 
   return (
     <>
@@ -150,7 +284,7 @@ function Header() {
             {/* Logo */}
             <Link
               className="text-3xl flex items-center gap-4 font-extrabold text-gray-900 tracking-widest"
-              href="/"
+              href="/home"
             >
               <Store className="h-8 w-8 text-blue-500 stroke-blue-500" />
               <p>EthioMarket</p>
@@ -170,20 +304,62 @@ function Header() {
                   </Link>
                 ))}
               </nav>
-              <form>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-black" />
+
+              {/* Search with suggestions */}
+              <div className="relative flex items-center w-80">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                   <Input
+                    ref={searchInputRef}
                     type="search"
                     placeholder="Search products..."
-                    className="pl-9"
+                    className="pl-9 pr-10 rounded-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all w-full"
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    onFocus={handleSearchInputFocus}
+                    onBlur={handleSearchInputBlur}
                   />
                 </div>
-              </form>
+
+                <Button
+                  onClick={handleSearch}
+                  className="ml-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl px-5 py-2 flex items-center gap-1 shadow-sm transition-all"
+                >
+                  <Search className="h-4 w-4" />
+                  Search
+                </Button>
+
+                {/* Suggestions List - Conditional Rendering with showSuggestions */}
+                {suggestions.length > 0 && showSuggestions && (
+                  <ul className="absolute top-full left-0 right-[90px] bg-white border border-gray-200 mt-2 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                    {suggestions.map((item) => (
+                      <li
+                        key={item.id}
+                        // CRITICAL: Prevent the input from blurring when clicking a suggestion.
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleSelectSuggestion(item.name)}
+                        className="flex items-center justify-between px-4 py-2 hover:bg-blue-50 cursor-pointer text-gray-800 transition-colors duration-150"
+                      >
+                        <span className="font-medium">{item.name}</span>
+                        {item.price && (
+                          <span className="text-sm text-gray-500">
+                            ${item.price}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
 
             {/* Right-side Icons */}
-            <div className="hidden lg:flex  items-center space-x-15">
+            <div
+              className={`hidden lg:flex items-center ${
+                user ? "space-x-12" : "space-x-5"
+              }`}
+            >
               <Button
                 variant="ghost"
                 size="icon"

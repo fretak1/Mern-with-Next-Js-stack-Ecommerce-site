@@ -17,9 +17,8 @@ import { useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { protectSignInAction } from "@/actions/auth";
 import logo from "../../../../public/images/logo1.png";
-import { Store } from "lucide-react";
+import { ArrowLeft, Store } from "lucide-react";
 
 interface LoginCardProps {
   onSwitchToRegister: () => void;
@@ -36,12 +35,6 @@ export default function LoginCard({ onSwitchToRegister }: LoginCardProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const check = await protectSignInAction(formData.email);
-    if (!check.success) {
-      toast(check.error);
-      return;
-    }
 
     const success = await login(formData.email, formData.password);
     if (success) {
@@ -96,7 +89,7 @@ export default function LoginCard({ onSwitchToRegister }: LoginCardProps) {
                   <div className="flex items-center">
                     <Label htmlFor="password">Password</Label>
                     <Link
-                      href="#"
+                      href="/auth/forgotPassword"
                       className="ml-auto inline-block text-sm underline text-gray-600"
                     >
                       Forgot your password?
@@ -123,14 +116,23 @@ export default function LoginCard({ onSwitchToRegister }: LoginCardProps) {
                 </Button>
               </form>
 
-              <div className="mt-4 text-center text-sm">
-                Don't have an account?{" "}
+              <div className="flex justify-between">
                 <Link
-                  href="/auth/register"
-                  className="underline font-bold text-black hover:opacity-80"
+                  className="mt-4 flex justify-between  text-center text-sm"
+                  href="/home"
                 >
-                  Sign up
+                  <ArrowLeft className="h-4 w-4 mt-0.5 mr-1" />
+                  <p>back to site</p>
                 </Link>
+                <div className="mt-4 text-center text-sm">
+                  Don't have an account?{" "}
+                  <Link
+                    href="/auth/register"
+                    className="underline font-bold text-black hover:opacity-80"
+                  >
+                    Sign up
+                  </Link>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -8,4 +8,6 @@ export const API_ROUTES = {
   CART: `${API_BASE_URL}/api/cart`,
   ADDRESS: `${API_BASE_URL}/api/address`,
   ORDER: `${API_BASE_URL}/api/order`,
+  COMMENTS: `${API_BASE_URL}/api/messages`,
+  NEWSLETTER: `${API_BASE_URL}/api/newsletter`,
 };
