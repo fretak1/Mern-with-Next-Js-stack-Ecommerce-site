@@ -33,7 +33,7 @@ function SuperAdminManageOrdersPage() {
   const { getAllOrders, adminOrders, updateOrderStatus, isLoading, error } =
     useOrderStore();
 
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<string>("");
 
@@ -45,6 +45,31 @@ function SuperAdminManageOrdersPage() {
     if (error) toast.error(error);
   }, [error]);
 
+  interface Address {
+  city?: string;
+  postalCode?: string;
+  phone?: string;
+}
+
+interface OrderItem {
+  productName: string;
+  quantity: number;
+}
+  interface Order {
+  id: string;
+  createdAt: string;
+  total: number;
+  status: OrderStatus;
+  paymentStatus: "COMPLETED" | "PENDING" | string;
+  paymentMethod: string;
+  user: {
+    name: string;
+  };
+  address?: Address;
+  items: OrderItem[];
+}
+
+  
   type OrderStatus =
     | "PENDING"
     | "PROCESSING"
@@ -365,7 +390,7 @@ function SuperAdminManageOrdersPage() {
             </Button>
             <Button
               onClick={() =>
-                handleStatusUpdate(selectedOrder.id, newStatus as OrderStatus)
+                 selectedOrder && handleStatusUpdate(selectedOrder.id, newStatus as OrderStatus)
               }
               disabled={newStatus === selectedOrder?.status}
               className="px-5 py-2 bg-blue-500 hover:bg-blue-400 text-white"
