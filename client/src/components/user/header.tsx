@@ -11,7 +11,6 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
-// ⭐️ UPDATED IMPORT ⭐️
 import { useRouter, usePathname } from "next/navigation";
 import {
   DropdownMenu,
@@ -26,8 +25,8 @@ import { useEffect, useState, useRef } from "react";
 import { useCartStore } from "@/store/useCartStore";
 import { Input } from "../ui/input";
 import { useProductStore } from "@/store/useProductStore";
+import HeaderSkeleton from "./headerSkeleton";
 
-// --- Type Definitions ---
 type Product = {
   id: string;
   name: string;
@@ -39,49 +38,39 @@ type Product = {
 const navItems = [
   { title: "HOME", to: "/home" },
   { title: "PRODUCTS", to: "/listing" },
+  { title: "About", to: "/about" },
 ];
-// ------------------------
 
 function Header() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
-  // ⭐️ GET PATHNAME ⭐️
   const pathname = usePathname();
 
-  // Mobile Menu States
   const [mobileView, setMobileView] = useState<"menu" | "account">("menu");
   const [showSheetDialog, setShowSheetDialog] = useState(false);
 
-  // Cart State (Zustand store)
   const { fetchCart, items } = useCartStore();
 
-  // Product State (Zustand store)
   const { products, getAllProducts } = useProductStore() as {
     products: Product[];
     getAllProducts: () => void;
   };
 
-  // Search States and Ref
   const [searchText, setSearchText] = useState("");
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [inputIsFocused, setInputIsFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const { fetchCurrentUser } = useAuthStore();
+  const { isLoading, fetchCurrentUser } = useAuthStore();
   const [fetched, setFetched] = useState(false);
 
   useEffect(() => {
-    // On app start, try to fetch current user (server will use httpOnly cookie)
     fetchCurrentUser();
   }, [fetchCurrentUser]);
-  // --- Effects ---
 
-  // 1. Fetch Cart
   useEffect(() => {
     if (user) fetchCart();
   }, [fetchCart, user]);
-
-  // 2. Fetch All Products for search suggestions
 
   useEffect(() => {
     if (!fetched) {
@@ -90,14 +79,11 @@ function Header() {
     }
   }, [getAllProducts, fetched]);
 
-  // 3. Manage searchText based on URL pathname (FIXED for App Router)
   useEffect(() => {
-    // Only run in the browser
     if (typeof window !== "undefined") {
-      const currentPath = pathname; // Use the value from the hook
+      const currentPath = pathname;
 
       if (currentPath.startsWith("/listing")) {
-        // Case 1: On the listing page, read search term from URL
         const params = new URLSearchParams(window.location.search);
         const searchParam = params.get("search");
 
@@ -108,17 +94,14 @@ function Header() {
 
         setShowSuggestions(false);
       } else {
-        // Case 2: On any other page, clear the input
         if (searchText !== "") {
           setSearchText("");
         }
         setShowSuggestions(false);
       }
     }
-    // ⭐️ DEPENDENCY CHANGED TO pathname ⭐️
   }, [pathname]);
 
-  // 4. Filter suggestions and manage visibility dynamically
   useEffect(() => {
     const query = searchText.trim().toLowerCase();
 
@@ -134,17 +117,12 @@ function Header() {
 
     setSuggestions(filtered.slice(0, 5));
 
-    // Only show if results found AND input is currently focused
     if (filtered.length > 0 && inputIsFocused) {
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
     }
-
-    // CRITICAL DEPENDENCY: inputIsFocused ensures this runs when focus changes
   }, [searchText, products, inputIsFocused]);
-
-  // --- Handlers ---
 
   const handleLogout = async () => await logout();
 
@@ -274,24 +252,23 @@ function Header() {
         );
     }
   };
-  // -------------------------
+
+  if (isLoading) return <HeaderSkeleton />;
 
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b bg-gray-50/70 backdrop-blur-md supports-[backdrop-filter]:bg-gray-200/70">
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto px-2 sm:px-6">
           <div className="flex items-center justify-between h-18">
-            {/* Logo */}
             <Link
-              className="text-3xl flex items-center gap-4 font-extrabold text-gray-900 tracking-widest"
+              className="text-xl sm:text-2xl md:text-3xl flex items-center gap-2 sm:gap-3 md:gap-4 font-extrabold text-gray-900 tracking-widest px-2 sm:px-4"
               href="/home"
             >
-              <Store className="h-8 w-8 text-blue-500 stroke-blue-500" />
+              <Store className="h-6 sm:h-7 md:h-8 w-6 sm:w-7 md:w-8 text-blue-500 stroke-blue-500" />
               <p>EthioMarket</p>
             </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-10 flex-1 justify-center">
+            <div className="hidden lg:flex items-center space-x-4 md:space-x-6 lg:space-x-10 flex-1 justify-center">
               <nav className="flex items-center space-x-10">
                 {navItems.map((item, index) => (
                   <Link
@@ -336,7 +313,6 @@ function Header() {
                     {suggestions.map((item) => (
                       <li
                         key={item.id}
-                        // CRITICAL: Prevent the input from blurring when clicking a suggestion.
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleSelectSuggestion(item.name)}
                         className="flex items-center justify-between px-4 py-2 hover:bg-blue-50 cursor-pointer text-gray-800 transition-colors duration-150"
@@ -357,17 +333,11 @@ function Header() {
             {/* Right-side Icons */}
             <div
               className={`hidden lg:flex items-center ${
-                user ? "space-x-12" : "space-x-5"
+                user
+                  ? "space-x-6 md:space-x-8 lg:space-x-12"
+                  : "space-x-4 md:space-x-5 lg:space-x-7"
               }`}
             >
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hidden sm:inline-flex hover:text-white hover:bg-blue-600"
-              >
-                <Heart className="h-5 w-5" />
-              </Button>
-
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -405,13 +375,12 @@ function Header() {
                 </Button>
               )}
 
-              {/* Cart */}
               <div
                 className="relative cursor-pointer p-2 rounded-full group hover:bg-blue-600 transition-colors"
                 onClick={() => router.push("/cart")}
               >
                 <ShoppingCart className="h-6 w-6 text-gray-800 group-hover:text-white" />
-                <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-blue-500 text-white text-xs font-medium rounded-full flex items-center justify-center border-2 border-white">
+                <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 h-4 sm:h-5 w-4 sm:w-5 bg-blue-500 text-white text-[10px] sm:text-xs font-medium rounded-full flex items-center justify-center border-2 border-white">
                   {items?.length || 0}
                 </span>
               </div>

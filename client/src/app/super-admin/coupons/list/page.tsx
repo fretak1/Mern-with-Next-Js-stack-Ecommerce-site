@@ -1,6 +1,13 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { toast } from "sonner";
+import { Trash, Loader2 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -9,19 +16,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useCouponStore } from "@/store/useCouponStore";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
-import { format } from "date-fns";
-import { Badge } from "@/components/ui/badge";
-import { Trash, Loader2 } from "lucide-react"; // Import Loader2
-import { toast } from "sonner"; // Assuming sonner is configured for toast messages
 
 function SuperAdminCouponListPage() {
   const router = useRouter();
   const { isLoading, couponList, fetchCoupons, deleteCoupon } =
     useCouponStore();
   const fetchCouponRef = useRef(false);
+
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedCouponId, setSelectedCouponId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!fetchCouponRef.current) {
@@ -30,24 +43,31 @@ function SuperAdminCouponListPage() {
     }
   }, [fetchCoupons]);
 
-  const handleDeleteCoupon = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this Coupon?")) {
-      const result = await deleteCoupon(id);
+  const handleDeleteCoupon = async () => {
+    if (!selectedCouponId) return;
 
-      if (result) {
-        toast.success("Coupon Deleted Successfully"); // Changed to toast.success
-        fetchCoupons(); // Re-fetch to update the list
-      } else {
-        toast.error("Failed to delete coupon."); // Added error toast
-      }
+    setIsDeleting(true);
+    const result = await deleteCoupon(selectedCouponId);
+    setIsDeleting(false);
+    setOpenDialog(false);
+
+    if (result) {
+      toast.success("Coupon deleted successfully.");
+      fetchCoupons();
+    } else {
+      toast.error("Failed to delete coupon.");
     }
   };
 
-  // Helper for status badge colors (similar to orders page)
+  const openDeleteDialog = (id: string) => {
+    setSelectedCouponId(id);
+    setOpenDialog(true);
+  };
+
   const getCouponStatusBadgeColors = (isActive: boolean) => {
     return isActive
-      ? "text-green-700 bg-green-100 border-green-300" // Active (Green)
-      : "text-red-700 bg-red-100 border-red-300"; // Expired (Red)
+      ? "text-green-700 bg-green-100 border-green-300"
+      : "text-red-700 bg-red-100 border-red-300";
   };
 
   return (
@@ -67,7 +87,7 @@ function SuperAdminCouponListPage() {
 
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
-            <Loader2 className="h-10 w-10 animate-spin text-primary-500" />
+            <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
             <p className="ml-4 text-lg text-gray-600">Loading coupons...</p>
           </div>
         ) : couponList.length === 0 ? (
@@ -149,10 +169,10 @@ function SuperAdminCouponListPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
-                          onClick={() => handleDeleteCoupon(coupon.id)}
-                          variant="destructive" // Use destructive variant for delete
+                          onClick={() => openDeleteDialog(coupon.id)}
+                          variant="destructive"
                           size={"icon"}
-                          className="h-8 w-8" // Make it a bit larger for better clickability
+                          className="h-8 w-8"
                         >
                           <Trash className="h-4 w-4" />
                         </Button>
@@ -164,6 +184,42 @@ function SuperAdminCouponListPage() {
             </Table>
           </div>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Coupon</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this coupon? This action cannot
+                be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setOpenDialog(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteCoupon}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

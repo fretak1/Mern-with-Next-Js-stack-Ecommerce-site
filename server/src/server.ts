@@ -14,6 +14,7 @@ import addressRoutes from "./routes/AddressRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import messageRoutes from "./routes/messageRoutes";
 import newsletterRoutes from "./routes/newsLetterRoutes";
+import paymentRoutes from "./routes/paymentRoutes";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -47,6 +48,7 @@ app.use("/api/address", addressRoutes);
 app.use("/api/order", orderRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/newsletter", newsletterRoutes);
+app.use("/api/payment", paymentRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello from E-Commerce backend");

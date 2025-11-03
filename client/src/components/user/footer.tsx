@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useMessageStore } from "@/store/useMessageStore";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
-import { useProductStore } from "@/store/useProductStore";
+import { useNewsletterStore } from "@/store/useNewsletterStore";
 
 export function Footer() {
   const {
@@ -15,7 +15,7 @@ export function Footer() {
     error: commentError,
   } = useMessageStore();
 
-  const { subscribeEmail, newsletterLoading } = useProductStore();
+  const { subscribeEmail, isLoading } = useNewsletterStore();
 
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [email, setEmail] = useState("");
@@ -150,19 +150,19 @@ export function Footer() {
                 className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={loading || newsletterLoading}
+                disabled={loading || isLoading}
               />
-              <button
+              <Button
                 onClick={handleSubscribe}
                 className={`px-4 py-2 rounded-lg text-white transition ${
-                  loading || newsletterLoading
+                  loading || isLoading
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-blue-500 hover:bg-blue-400"
                 }`}
-                disabled={loading || newsletterLoading}
+                disabled={loading || isLoading}
               >
-                {loading || newsletterLoading ? "Subscribing..." : "Subscribe"}
-              </button>
+                {loading || isLoading ? "Subscribing..." : "Subscribe"}
+              </Button>
             </div>
             {success && <p className="text-blue-500 text-sm mt-1">{success}</p>}
             {error && <p className="text-red-500 text-sm mt-1">{error}</p>}

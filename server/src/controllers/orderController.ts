@@ -4,118 +4,175 @@ import { NextFunction, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { prisma } from "../server";
 
-const PAYPAL_CLIENT_ID =
-  "AYYtmQuBVHm_q4fO-nRv84xIKhQk1-BdhSLckYRxcBJLhxI5EcxafPKdkvKpqLDP-pNLNXalxvlUSgZE";
-const PAYPAL_CLIENT_SECRET =
-  "EH6X0HMUA-0gB0Z1m8fq_p-YTy1dDLZT7Zs-Q8VcuX33xJN9RID883YWb38JSMwz88t2grJNwKR5ct_W";
+const CHAPA_SECRET_KEY = process.env.CHAPA_SECRET_KEY;
+const CHAPA_API_URL = "https://api.chapa.co/v1/transaction/verify";
 
-async function getPaypalAccessToken() {
-  const response = await axios.post(
-    "https://api-m.sandbox.paypal.com/v1/oauth2/token",
-    "grant_type=client_credentials",
-    {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${Buffer.from(
-          `${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`
-        ).toString("base64")}`,
-      },
-    }
-  );
-
-  return response.data.access_token;
-}
-
-export const createPaypalOrder = async (
+export const createChapaOrder = async (
   req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
+  res: Response
+) => {
   try {
-    const { items, total } = req.body;
-    const accesesToken = await getPaypalAccessToken();
+    const { userId, addressId, items, couponId, total, txRef, paymentMethod } =
+      req.body;
 
-    const paypalItems = items.map((item: any) => ({
-      name: item.name,
-      description: item.description || " ",
-      sku: item.id,
-      unit_amount: {
-        currency_code: "USD",
-        value: item.price.toFixed(2),
-      },
-      quantity: item.quantity.toString(),
-      category: "PHYSICAL_GOODS",
-    }));
+    if (!txRef || paymentMethod !== "CHAPA") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid request data for Chapa order initialization.",
+      });
+    }
 
-    const itemTotal = paypalItems.reduce(
-      (sum: any, item: any) =>
-        sum + parseFloat(item.unit_amount.value) * parseInt(item.quantity),
-      0
-    );
+    const existing = await prisma.order.findFirst({ where: { txRef } });
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: "Transaction reference already in use.",
+      });
+    }
 
-    const response = await axios.post(
-      "https://api-m.sandbox.paypal.com/v2/checkout/orders",
-      {
-        intent: "CAPTURE",
-        purchase_units: [
-          {
-            amount: {
-              currency_code: "USD",
-              value: total.toFixed(2),
-              breakdown: {
-                item_total: {
-                  currency_code: "USD",
-                  value: itemTotal.toFixed(2),
-                },
-              },
-            },
-            items: paypalItems,
+    const order = await prisma.order.create({
+      data: {
+        userId,
+        addressId,
+        total,
+        couponId,
+        paymentMethod,
+        paymentStatus: "PENDING",
+        txRef: txRef,
+        items: {
+          createMany: {
+            data: items.map((item: any) => ({
+              productId: item.productId,
+              productName: item.productName,
+              productCategory: item.productCategory,
+              quantity: item.quantity,
+              price: item.price,
+              size: item.size,
+              color: item.color,
+            })),
           },
-        ],
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accesesToken}`,
-          "PayPal-Request-ID": uuidv4(),
         },
-      }
-    );
+        status: "PENDING",
+      },
+      include: { items: true },
+    });
 
-    res.status(200).json(response.data);
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({
+    return res.status(201).json(order);
+  } catch (err: any) {
+    console.error("createChapaOrder error:", err);
+    return res.status(500).json({
       success: false,
-      message: "Unexpected Error Occured!",
+      message: "Failed to create PENDING order on server.",
+      error: err.message,
     });
   }
 };
 
-export const capturePaypalOrder = async (
+export const finalizeChapaOrder = async (
   req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { orderId } = req.body;
-    const accessToken = await getPaypalAccessToken();
-
-    const response = await axios.post(
-      `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}/capture`,
-      {},
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
-    res.status(200).json(response.data);
-  } catch (e) {
-    res.status(500).json({
+  res: Response
+) => {
+  const { txRef } = req.params;
+  if (!txRef) {
+    return res.status(400).json({
       success: false,
-      message: "Unexpected error occured!",
+      message: "Missing transaction reference.",
+    });
+  }
+
+  if (!CHAPA_SECRET_KEY) {
+    return res.status(500).json({
+      success: false,
+      message: "Server misconfiguration: CHAPA_SECRET_KEY missing.",
+    });
+  }
+
+  try {
+    const existingOrder = await prisma.order.findFirst({
+      where: { txRef: txRef, paymentStatus: "PENDING" },
+    });
+
+    if (!existingOrder) {
+      const completedOrder = await prisma.order.findFirst({
+        where: { txRef, paymentStatus: "COMPLETED" },
+      });
+      if (completedOrder) {
+        return res.status(200).json({
+          success: true,
+          order: completedOrder,
+          message: "Order already finalized.",
+        });
+      }
+
+      return res.status(404).json({
+        success: false,
+        message: "Pending order not found.",
+      });
+    }
+
+    const verificationResponse = await axios.get(`${CHAPA_API_URL}/${txRef}`, {
+      headers: {
+        Authorization: `Bearer ${CHAPA_SECRET_KEY}`,
+      },
+    });
+
+    const chapaData = verificationResponse.data.data;
+    if (
+      verificationResponse.data.status !== "success" ||
+      chapaData.status !== "success"
+    ) {
+      await prisma.order.update({
+        where: { id: existingOrder.id },
+        data: { paymentStatus: "FAILED", status: "PENDING" },
+      });
+      return res.status(400).json({
+        success: false,
+        message: "Chapa verification failed or payment was unsuccessful.",
+      });
+    }
+
+    if (existingOrder.total !== chapaData.amount) {
+      console.warn(
+        `[FRAUD] Amount mismatch for txRef: ${txRef}. Order total: ${existingOrder.total}, Paid: ${chapaData.amount}`
+      );
+      await prisma.order.update({
+        where: { id: existingOrder.id },
+        data: { paymentStatus: "FAILED", status: "PENDING" },
+      });
+
+      return res.status(403).json({
+        success: false,
+        message: "Amount paid does not match order total. Payment rejected.",
+      });
+    }
+    const finalizedOrder = await prisma.order.update({
+      where: { id: existingOrder.id },
+      data: {
+        paymentStatus: "COMPLETED",
+        status: "PENDING",
+        paymentId: chapaData.id,
+      },
+      include: { items: true },
+    });
+
+    return res.status(200).json({
+      success: true,
+      order: finalizedOrder,
+      message: "Order finalized successfully.",
+    });
+  } catch (err: any) {
+    console.error("finalizeChapaOrder error:", err);
+    try {
+      await prisma.order.updateMany({
+        where: { txRef, paymentStatus: "PENDING" },
+        data: { paymentStatus: "FAILED", status: "PENDING" },
+      });
+    } catch (e) {}
+
+    return res.status(500).json({
+      success: false,
+      message: "Error finalizing order during Chapa API call.",
+      error: err.message,
     });
   }
 };
@@ -148,7 +205,7 @@ export const createOrder = async (
           addressId,
           couponId,
           total,
-          paymentMethod: "CREDIT_CARD",
+          paymentMethod: "CHAPA",
           paymentStatus: "COMPLETED",
           paymentId,
           items: {

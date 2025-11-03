@@ -1,5 +1,6 @@
 import { API_ROUTES } from "@/utils/api";
 import axios from "axios";
+import { toast } from "sonner";
 import { create } from "zustand";
 
 interface FeatureBanner {
@@ -30,7 +31,14 @@ export const useSettingsStore = create<settingState>((set) => ({
 
       set({ banners: response.data.banners, isLoading: false });
     } catch (error) {
-      console.error(error);
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to featch banners.");
+      }
       set({ error: "failed to featch banners", isLoading: false });
     }
   },
@@ -58,8 +66,15 @@ export const useSettingsStore = create<settingState>((set) => ({
 
       return response.data.success;
     } catch (error) {
-      console.error(error);
-      set({ error: "failed to featch banners", isLoading: false });
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to add banners.");
+      }
+      set({ error: "failed to add banners", isLoading: false });
     }
   },
 }));

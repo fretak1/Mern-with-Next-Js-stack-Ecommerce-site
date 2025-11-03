@@ -24,26 +24,31 @@ model User{
     orders Order[]
 }
 
+
 model Order {
-  id            String        @id @default(cuid())
-  userId        String
-  user          User          @relation(fields: [userId], references: [id])
-  addressId     String
-  address       Address       @relation(fields: [addressId], references: [id])
-  items         OrderItem[]
-  couponId      String?
-  coupon        Coupon?       @relation(fields: [couponId], references: [id])
-  total         Float
-  status        OrderStatus   @default(PENDING)
-  paymentMethod PaymentMethod
-  paymentStatus PaymentStatus @default(PENDING)
-  paymentId     String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id              String          @id @default(cuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id])
+  addressId       String
+  address         Address         @relation(fields: [addressId], references: [id])
+  items           OrderItem[]
+  couponId        String?
+  coupon          Coupon?         @relation(fields: [couponId], references: [id])
+  total           Float
+  status          OrderStatus     @default(PENDING)
+  paymentMethod   PaymentMethod
+  paymentStatus   PaymentStatus   @default(PENDING)
+  paymentId       String?
+  
+  txRef           String?         @unique 
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([userId])
   @@index([addressId])
   @@index([couponId])
+  @@index([txRef])
 }
 
 model OrderItem {
@@ -124,7 +129,7 @@ model CartItem {
   productId String
   quantity  Int
   size      String?
-  color     String
+  color     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -183,13 +188,16 @@ enum OrderStatus {
   PROCESSING
   SHIPPED
   DELIVERED
+  CANCELLED
 }
 
 enum PaymentMethod {
-  CREDIT_CARD
+  CHAPA
 }
 
 enum PaymentStatus {
   PENDING
   COMPLETED
+  FAILED
+  CANCELLED
 }

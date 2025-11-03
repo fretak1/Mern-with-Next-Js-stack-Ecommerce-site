@@ -1,5 +1,6 @@
 import { API_ROUTES } from "@/utils/api";
 import axios from "axios";
+import { toast } from "sonner";
 import { create } from "zustand";
 
 export interface Coupon {
@@ -36,6 +37,14 @@ export const useCouponStore = create<couponStore>((set, get) => ({
       );
       set({ couponList: response.data.couponList, isLoading: false });
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("failed to fetch coupons.");
+      }
       set({ isLoading: false, error: "failed to fetch coupons" });
     }
   },
@@ -52,6 +61,14 @@ export const useCouponStore = create<couponStore>((set, get) => ({
       set({ isLoading: false });
       return response.data.coupon;
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("failed to Create coupons.");
+      }
       set({ isLoading: false, error: "failed to Create coupon" });
       return null;
     }
@@ -67,6 +84,14 @@ export const useCouponStore = create<couponStore>((set, get) => ({
 
       return response.data.success;
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("failed to delete coupons.");
+      }
       set({ isLoading: false, error: "failed to delete coupon" });
       return null;
     }

@@ -1,5 +1,7 @@
 import axios from "axios";
 import { Request, Response } from "express";
+import { AuthenticatedRequest } from "../middleware/authMiddleware";
+import { prisma } from "../server";
 
 const chapaAxios = axios.create({
   baseURL: process.env.CHAPA_BASE_URL,
@@ -11,8 +13,17 @@ const chapaAxios = axios.create({
 
 export const initializePayment = async (req: Request, res: Response) => {
   try {
+    const APP_BASE_URL = process.env.APP_BASE_URL;
+
+    if (!APP_BASE_URL) {
+      return res.status(500).json({
+        success: false,
+        message: "Server configuration missing APP_BASE_URL.",
+      });
+    }
+
     const { amount, currency, customerEmail, customerName, txRef } = req.body;
-    // Validate fields…
+    const returnUrl = `${APP_BASE_URL}/checkout/success/${txRef}`;
 
     const resp = await chapaAxios.post("/transaction/initialize", {
       amount,
@@ -20,7 +31,7 @@ export const initializePayment = async (req: Request, res: Response) => {
       tx_ref: txRef,
       customer_email: customerEmail,
       customer_name: customerName,
-      // you can pass more optional fields (callback_url, customizations etc.)
+      return_url: returnUrl,
     });
 
     if (resp.data.status === "success") {
@@ -30,13 +41,11 @@ export const initializePayment = async (req: Request, res: Response) => {
         reference: txRef,
       });
     } else {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Chapa init failed",
-          details: resp.data,
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Chapa init failed",
+        details: resp.data,
+      });
     }
   } catch (err) {
     console.error("initializePayment error", err);
@@ -44,29 +53,54 @@ export const initializePayment = async (req: Request, res: Response) => {
   }
 };
 
-export const verifyPayment = async (req: Request, res: Response) => {
+export const verifyPayment = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
   try {
-    const { txRef } = req.params; // or body
+    const { txRef } = req.params;
 
-    const resp = await chapaAxios.get(`/transaction/verify/${txRef}`);
+    if (!txRef) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing transaction reference",
+      });
+    }
+
+    const chapaRes = await axios.get(
+      `https://api.chapa.co/v1/transaction/verify/${txRef}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.CHAPA_SECRET_KEY}`,
+        },
+      }
+    );
+
+    const verificationData = chapaRes.data;
 
     if (
-      resp.data.status === "success" &&
-      resp.data.data.status === "successful"
+      verificationData.status === "success" &&
+      verificationData.data.status === "success"
     ) {
-      // Update your order in DB: paymentStatus = "completed"
-      return res.status(200).json({ success: true, data: resp.data.data });
+      return res.status(200).json({
+        success: true,
+        message: "Payment verified successfully",
+        data: verificationData.data,
+      });
     } else {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Transaction not successful",
-          data: resp.data.data,
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Payment verification failed",
+        data: verificationData.data,
+      });
     }
-  } catch (err) {
-    console.error("verifyPayment error", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+  } catch (error: any) {
+    console.error("Verify payment error:", error.response?.data || error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Error verifying payment",
+      error: error.message || "Internal Server Error",
+    });
   }
 };

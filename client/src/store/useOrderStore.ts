@@ -1,5 +1,7 @@
+// 📄 useOrderStore.ts (Fixed)
 import { API_ROUTES } from "@/utils/api";
 import axios from "axios";
+import { toast } from "sonner";
 import { create } from "zustand";
 
 interface OrderItem {
@@ -13,7 +15,6 @@ interface OrderItem {
   price: number;
 }
 
-// Define the common OrderStatus type here, so all interfaces can use it
 type OrderStatus =
   | "PENDING"
   | "PROCESSING"
@@ -28,9 +29,10 @@ export interface Order {
   items: OrderItem[];
   couponId?: string;
   total: number;
-  status: OrderStatus; // Use the common type
-  paymentMethod: "CREDIT_CARD";
+  status: OrderStatus;
+  paymentMethod: "CREDIT_CARD" | "CHAPA" | "CASH";
   paymentStatus: "PENDING" | "COMPLETED";
+  txRef?: string;
   paymentId?: string;
   createdAt: string;
   updatedAt: string;
@@ -43,10 +45,11 @@ export interface AdminOrder {
   items: OrderItem[];
   couponId?: string;
   total: number;
-  status: OrderStatus; // Use the common type
-  paymentMethod: "CREDIT_CARD";
+  status: OrderStatus;
+  paymentMethod: "CREDIT_CARD" | "CHAPA" | "CASH";
   paymentStatus: "PENDING" | "COMPLETED";
   paymentId?: string;
+  txRef?: string;
   createdAt: string;
   updatedAt: string;
   user: {
@@ -54,17 +57,38 @@ export interface AdminOrder {
     name: string;
     email: string;
   };
+  address: {
+    id: string;
+    name: string;
+    city?: string;
+    address?: string;
+    phone?: string;
+    country?: string;
+    postalCode: String;
+  };
 }
 
-interface CreateOrderData {
+interface CreateOrderPayload {
   userId: string;
   addressId: string;
   items: Omit<OrderItem, "id">[];
   couponId?: string;
   total: number;
-  paymentMethod: "CREDIT_CARD";
+  paymentMethod: "CREDIT_CARD" | "CHAPA" | "CASH";
   paymentStatus: "PENDING" | "COMPLETED";
   paymentId?: string;
+  txRef?: string;
+}
+
+interface CreateOrderData
+  extends Omit<
+    CreateOrderPayload,
+    "paymentMethod" | "paymentStatus" | "txRef"
+  > {
+  paymentMethod: "CASH" | "CREDIT_CARD";
+  paymentStatus: "PENDING" | "COMPLETED";
+  paymentId?: string;
+  txRef?: string;
 }
 
 interface OrderStore {
@@ -74,15 +98,19 @@ interface OrderStore {
   userOrders: Order[];
   adminOrders: AdminOrder[];
   error: string | null;
-  createPayPalOrder: (items: any[], total: number) => Promise<string | null>;
-  capturePayPalOrder: (orderId: string) => Promise<any | null>;
+  createChapaOrder: (
+    orderData: Omit<CreateOrderPayload, "paymentId" | "paymentStatus"> & {
+      txRef: string;
+      paymentMethod: "CHAPA";
+      paymentStatus: "PENDING";
+    }
+  ) => Promise<Order | null>;
+
+  finalizeChapaOrder: (txRef: string, chapaData: any) => Promise<boolean>;
   createOrder: (orderData: CreateOrderData) => Promise<Order | null>;
   getOrder: (orderId: string) => Promise<Order | null>;
-  updateOrderStatus: (
-    orderId: string,
-    status: OrderStatus // Changed from Order["status"] to the explicit OrderStatus type
-  ) => Promise<boolean>;
-  getAllOrders: () => Promise<AdminOrder[] | null>; // Changed return type to AdminOrder[]
+  updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<boolean>;
+  getAllOrders: () => Promise<AdminOrder[] | null>;
   getOrdersByUserId: () => Promise<Order[] | null>;
   setCurrentOrder: (order: Order | null) => void;
 }
@@ -95,46 +123,79 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
   userOrders: [],
   adminOrders: [],
 
-  createPayPalOrder: async (items, total) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await axios.post(
-        `${API_ROUTES.ORDER}/create-paypal-order`,
-        { items, total },
-        { withCredentials: true }
-      );
-
-      set({ isLoading: false });
-
-      return response.data.id;
-    } catch (error) {
-      set({ isLoading: false, error: "Failed to Create Paypal Order" });
-      return null;
-    }
-  },
-
-  capturePayPalOrder: async (orderId) => {
+  createChapaOrder: async (orderData) => {
     set({ isLoading: true, error: null, isPaymentProcessing: true });
     try {
       const response = await axios.post(
-        `${API_ROUTES.ORDER}/capture-paypal-order`,
-        { orderId },
+        `${API_ROUTES.ORDER}/create-chapa-order`,
+        orderData,
         { withCredentials: true }
       );
 
-      set({ isLoading: false, isPaymentProcessing: false });
+      set({
+        isLoading: false,
+        currentOrder: response.data,
+        isPaymentProcessing: false,
+      });
 
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        // Optional redirect after a delay
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error(error.response?.data?.message);
+      }
       set({
         isLoading: false,
         isPaymentProcessing: false,
-        error: "Failed to Capture Paypal Order",
+        error:
+          error.response?.data?.message ||
+          "Failed to create PENDING Chapa Order",
       });
       return null;
     }
   },
+  finalizeChapaOrder: async (txRef, chapaData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.put(
+        `${API_ROUTES.ORDER}/finalize-chapa-order/${txRef}`,
+        { chapaData },
+        { withCredentials: true }
+      );
 
+      if (response.data.success) {
+        set({
+          isLoading: false,
+          currentOrder: response.data.order,
+        });
+        return true;
+      } else {
+        set({ isLoading: false, error: response.data.message });
+        return false;
+      }
+    } catch (error: any) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error(error.response?.data?.message);
+      }
+
+      set({
+        isLoading: false,
+        error:
+          error.response?.data?.message || "Failed to finalize Chapa order",
+      });
+      return false;
+    }
+  },
   createOrder: async (orderData) => {
     set({ isLoading: true, error: null, isPaymentProcessing: true });
     try {
@@ -152,12 +213,21 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
 
       return response.data;
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        // Optional redirect after a delay
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to Create Order");
+      }
       set({
         isLoading: false,
         isPaymentProcessing: false,
         error: "Failed to Create Order",
       });
-      console.log(error);
+
       return null;
     }
   },
@@ -190,7 +260,14 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
       }));
       return true;
     } catch (error) {
-      // Changed error message to be more specific
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to update order status");
+      }
       set({ error: "Failed to update order status", isLoading: false });
       return false;
     }
@@ -208,6 +285,15 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
 
       return response.data;
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        // Optional redirect after a delay
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to get Orders");
+      }
       set({ isLoading: false, error: "Failed to get Orders" });
       return null;
     }
@@ -225,6 +311,15 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
 
       return response.data;
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        // Optional redirect after a delay
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to get Orders");
+      }
       set({ isLoading: false, error: "Failed to get Orders" });
       return null;
     }
@@ -242,6 +337,15 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
 
       return response.data;
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        // Optional redirect after a delay
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to get Orders");
+      }
       set({ isLoading: false, error: "Failed to get Order" });
       return null;
     }

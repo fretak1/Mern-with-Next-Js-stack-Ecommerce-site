@@ -1,5 +1,6 @@
 import { API_ROUTES } from "@/utils/api";
 import axios from "axios";
+import { toast } from "sonner";
 import { create } from "zustand";
 
 export interface Address {
@@ -39,6 +40,14 @@ export const useAddressStore = create<AddressStore>((set, get) => ({
 
       set({ isLoading: false, addresses: response.data.address });
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("failed to fetch Address.");
+      }
       set({ isLoading: false, error: "Failed to fetch Address" });
     }
   },
@@ -61,6 +70,14 @@ export const useAddressStore = create<AddressStore>((set, get) => ({
 
       return newAddress;
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("failed to Create Address");
+      }
       set({ isLoading: false, error: "Failed to Create Address" });
     }
   },
@@ -85,7 +102,15 @@ export const useAddressStore = create<AddressStore>((set, get) => ({
 
       return updatedAddress;
     } catch (error) {
-      set({ isLoading: false, error: "Failed to Create Address" });
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("failed to update Address");
+      }
+      set({ isLoading: false, error: "Failed to update Address" });
     }
   },
   deleteAddress: async (id) => {
@@ -102,7 +127,15 @@ export const useAddressStore = create<AddressStore>((set, get) => ({
 
       return true;
     } catch (error) {
-      set({ isLoading: false, error: "Failed to Create Address" });
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("failed to delete Address");
+      }
+      set({ isLoading: false, error: "Failed to delete Address" });
       return false;
     }
   },

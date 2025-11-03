@@ -13,11 +13,6 @@ import {
   WatchIcon,
   FlaskConical,
   Sparkles,
-  Footprints,
-  Handbag,
-  Shirt,
-  ShoppingBasket,
-  Images,
   ChevronLeft,
   ChevronRight,
   Star,
@@ -25,7 +20,8 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useAuthStore } from "@/store/useAuthStore";
+
+import HomeSkeleton from "@/components/user/homeSkeleton";
 
 const categoriesWithIcon = [
   { id: "handBags", label: "Hand Bags", icon: HandbagIcon },
@@ -36,7 +32,6 @@ const categoriesWithIcon = [
   { id: "Beauty & Cosmotics", label: "Beauty & Cosmotics", icon: Sparkles },
 ];
 
-// Custom Arrows
 const PrevArrow = ({ onClick }: { onClick?: () => void }) => (
   <button
     onClick={onClick}
@@ -57,7 +52,6 @@ const NextArrow = ({ onClick }: { onClick?: () => void }) => (
   </button>
 );
 
-// Slider Config for Brand Sections
 const brandSliderSettings = (count: number) => ({
   dots: false,
   infinite: count > 5,
@@ -76,12 +70,6 @@ const brandSliderSettings = (count: number) => ({
   ],
 });
 
-// Animation variants
-const containerVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.1 } },
-};
-
 const cardVariants = {
   hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
@@ -89,7 +77,7 @@ const cardVariants = {
 
 function HomePage() {
   const { banners, featchBanners } = useSettingsStore();
-  const { products, getAllProducts } = useProductStore();
+  const { isLoading, products, getAllProducts } = useProductStore();
   const [currentSlide, setCurrentSlide] = useState(0);
   const router = useRouter();
 
@@ -160,7 +148,6 @@ function HomePage() {
     router.push(`/listing?category=${encodeURIComponent(category)}`);
   };
 
-  // Navigate to listing page filtered by brand
   const handleBrandClick = (brand: string) => {
     router.push(`/listing?brand=${encodeURIComponent(brand)}`);
   };
@@ -171,8 +158,13 @@ function HomePage() {
 
   const newProducts = products.filter((p) => p.productType === "new");
 
+  if (isLoading) {
+    console.log("Loading");
+    return <HomeSkeleton />;
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 antialiased">
+    <div className="min-h-screen bg-gray-50 w-full antialiased overflow-x-hidden">
       {/* HERO SLIDER SECTION */}
       <section className="relative h-[80vh] overflow-hidden shadow-lg">
         {banners.map((bannerItem, index) => (
@@ -188,23 +180,25 @@ function HomePage() {
               className="w-full h-full object-cover brightness-[.75]"
             />
             <div className="absolute inset-0 flex flex-col justify-center px-6 container mx-auto text-white">
-              <div className="space-y-4 max-w-xl">
-                <span className="text-sm uppercase tracking-[.25em] font-medium opacity-80 border-l-4 border-white pl-3">
+              <div className="space-y-3 sm:space-y-4 max-w-xl">
+                <span className="text-xs sm:text-sm uppercase tracking-[.25em] font-medium opacity-80 border-l-4 border-white pl-3">
                   Ethio Market
                 </span>
-                <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">
+                <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold leading-tight">
                   LUXURY BAGS, PERFUMES,
                   <br />
                   WATCHES & COSMETICS
                 </h1>
-                <p className="text-lg opacity-90 font-light max-w-md">
+                <p className="text-sm sm:text-base md:text-lg opacity-90 font-light max-w-md">
                   Discover elegance and style at Ethio Market — your destination
                   for premium fragrances, designer bags, timeless watches, and
                   high-end beauty products.
                 </p>
                 <Button
                   onClick={() => router.push("/listing")}
-                  className="bg-white text-gray-900 font-semibold hover:bg-gray-200 transition-all px-10 py-7 text-lg rounded-full shadow-xl uppercase mt-4"
+                  className="bg-white text-gray-900 font-semibold hover:bg-gray-200 transition-all 
+                 text-sm sm:text-base px-6 sm:px-10 py-4 sm:py-6 rounded-full 
+                 shadow-xl uppercase mt-4"
                 >
                   SHOP NOW
                 </Button>
@@ -295,7 +289,7 @@ function HomePage() {
                             </Link>
                           </h3>
                           <p className="text-sm text-gray-500 mt-1">
-                            {product.category}
+                            {product.brand}
                           </p>
                           <div className="flex items-center justify-between mt-3">
                             <p className="text-lg font-semibold text-gray-900">
@@ -363,7 +357,7 @@ function HomePage() {
                           </Link>
                         </h3>
                         <p className="text-sm text-gray-500 mt-1">
-                          {product.category}
+                          {product.brand}
                         </p>
                         <div className="flex items-center justify-between mt-3">
                           <p className="text-xl font-semibold text-gray-900">
@@ -471,7 +465,7 @@ function HomePage() {
                           </Link>
                         </h3>
                         <p className="text-sm text-gray-500 mt-1">
-                          {product.category}
+                          {product.brand}
                         </p>
                         <div className="flex items-center justify-between mt-3">
                           <p className="text-xl font-semibold text-gray-900">

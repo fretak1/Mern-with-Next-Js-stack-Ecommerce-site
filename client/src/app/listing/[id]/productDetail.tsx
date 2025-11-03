@@ -35,7 +35,6 @@ function ProductDetailsContent({ id }: { id: string }) {
   const [selectedColor, setSelectedColor] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  // Review states
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,7 +43,6 @@ function ProductDetailsContent({ id }: { id: string }) {
     comment: string;
   } | null>(null);
 
-  // After fetching product in useEffect, check if user reviewed
   useEffect(() => {
     if (product && user) {
       const existingReview = product.reviews.find(
@@ -55,8 +53,8 @@ function ProductDetailsContent({ id }: { id: string }) {
           rating: existingReview.rating,
           comment: existingReview.comment || "",
         });
-        setRating(existingReview.rating); // prefill rating
-        setComment(existingReview.comment || ""); // prefill comment
+        setRating(existingReview.rating);
+        setComment(existingReview.comment || "");
       } else {
         setUserReview(null);
         setRating(0);
@@ -92,7 +90,7 @@ function ProductDetailsContent({ id }: { id: string }) {
       setSelectedColor(0);
       setSelectedSize("");
       setQuantity(1);
-      toast.success("Product added successfully to cart");
+      toast.success("Product added  to cart");
     }
   };
 
@@ -121,7 +119,6 @@ function ProductDetailsContent({ id }: { id: string }) {
 
         setProduct(updatedProduct);
 
-        // Find the logged-in user's review
         const updatedReview = updatedProduct.reviews.find(
           (r) => r.userId === user.id
         );
@@ -132,7 +129,6 @@ function ProductDetailsContent({ id }: { id: string }) {
             comment: updatedReview.comment || "",
           });
 
-          // Optional: reset rating/comment inputs to match the user's current review
           setRating(updatedReview.rating);
           setComment(updatedReview.comment || "");
         }
@@ -140,12 +136,17 @@ function ProductDetailsContent({ id }: { id: string }) {
         toast.error(result?.message || "Failed to submit review.");
       }
     } catch (error) {
-      console.error("Error submitting review:", error);
       toast.error("An error occurred while submitting your review.");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const sameOtherProducts = product
+    ? products.filter(
+        (p) => p.category === product.category && p.id !== product.id
+      )
+    : [];
 
   if (!product || isLoading) return <ProductDetailSkeleton />;
 
@@ -154,7 +155,6 @@ function ProductDetailsContent({ id }: { id: string }) {
       <div className="container mx-auto px-4 py-12 lg:py-20">
         {/* ================= PRODUCT DETAILS ================= */}
         <div className="flex flex-col lg:flex-row gap-12">
-          {/* === IMAGES SECTION === */}
           <div className="flex flex-col-reverse lg:flex-row gap-6 lg:w-2/3">
             <div className="flex lg:flex-col gap-3 overflow-x-auto">
               {product.images.map((image: string, index: number) => (
@@ -196,9 +196,8 @@ function ProductDetailsContent({ id }: { id: string }) {
               <h1 className="text-3xl font-bold text-gray-900 mb-1">
                 {product.name}
               </h1>
-              <p className="text-gray-500 text-sm mb-4">{product.category}</p>
+              <p className="text-gray-500 text-sm mb-4">{product.brand}</p>
 
-              {/* ⭐ Product Rating Section */}
               <div className="flex items-center gap-2 mb-2">
                 {[...Array(5)].map((_, i) => (
                   <Star
@@ -215,7 +214,7 @@ function ProductDetailsContent({ id }: { id: string }) {
                 </span>
               </div>
               <span className="text-3xl font-semibold text-blue-600">
-                ${product.price.toFixed(2)}
+                {product.price.toFixed(2)} ETB
               </span>
             </div>
 
@@ -238,7 +237,6 @@ function ProductDetailsContent({ id }: { id: string }) {
               </div>
             </div>
 
-            {/* === SIZES === */}
             <div>
               <h3 className="font-semibold mb-2 text-gray-800">Size</h3>
               <div className="flex gap-2 flex-wrap">
@@ -255,7 +253,6 @@ function ProductDetailsContent({ id }: { id: string }) {
               </div>
             </div>
 
-            {/* === QUANTITY === */}
             <div>
               <h3 className="font-semibold mb-2 text-gray-800">Quantity</h3>
               <div className="flex items-center gap-3">
@@ -279,7 +276,6 @@ function ProductDetailsContent({ id }: { id: string }) {
               </div>
             </div>
 
-            {/* === ADD TO CART BUTTON === */}
             <div>
               <Button
                 onClick={handleAddToCart}
@@ -289,7 +285,6 @@ function ProductDetailsContent({ id }: { id: string }) {
               </Button>
             </div>
 
-            {/* === ACCORDION SECTION === */}
             <Accordion
               type="single"
               collapsible
@@ -308,19 +303,41 @@ function ProductDetailsContent({ id }: { id: string }) {
                 <AccordionTrigger className="font-semibold text-gray-900 hover:text-blue-600">
                   Shipping & Returns
                 </AccordionTrigger>
-                <AccordionContent className="text-gray-600 leading-relaxed">
-                  Free shipping on orders over $50. Easy returns within 30 days.
-                  See our full policy for more details.
+                <AccordionContent className="text-gray-600 leading-relaxed space-y-3">
+                  <p>
+                    Orders are processed within{" "}
+                    <strong>1–2 business days</strong> and delivered within
+                    <strong>3–7 business days</strong> depending on your
+                    location. We offer <strong>free shipping</strong> on all
+                    orders above $50, while smaller orders will have shipping
+                    fees calculated at checkout.
+                  </p>
+                  <p>
+                    Once your order is shipped, you’ll receive an email with a{" "}
+                    <strong>tracking number</strong>
+                    to monitor your delivery status.
+                  </p>
+                  <p>
+                    If you’re not completely satisfied, you can return items
+                    within
+                    <strong>30 days</strong> of delivery. Products must be
+                    unused, in their original packaging, and with all tags
+                    attached.
+                  </p>
+                  <p>
+                    Refunds are processed to your original payment method within
+                    <strong>5–10 business days</strong> after we receive your
+                    return. For more details, please see our full{" "}
+                    <strong>Shipping & Returns Policy</strong> page.
+                  </p>
                 </AccordionContent>
               </AccordionItem>
 
-              {/* === REVIEWS === */}
               <AccordionItem value="reviews">
                 <AccordionTrigger className="font-semibold text-gray-900 hover:text-blue-600">
                   Reviews
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 leading-relaxed space-y-4">
-                  {/* Show existing review if present */}
                   {userReview ? (
                     <div className="border-t border-gray-200 pt-4">
                       <h4 className="font-semibold mb-2 text-gray-800">
@@ -355,7 +372,6 @@ function ProductDetailsContent({ id }: { id: string }) {
                       </Button>
                     </div>
                   ) : (
-                    // Show form for new review if user hasn't reviewed yet
                     <div className="border-t border-gray-200 pt-4">
                       <h4 className="font-semibold mb-2 text-gray-800">
                         Write a Review
@@ -367,7 +383,7 @@ function ProductDetailsContent({ id }: { id: string }) {
                             onClick={() => setRating(r)}
                             className={`h-6 w-6 cursor-pointer transition ${
                               r <= rating
-                                ? "text-yellow-400 fill-yellow-400"
+                                ? "text-blue-500 fill-blue-500"
                                 : "text-gray-300"
                             }`}
                           />
@@ -399,11 +415,11 @@ function ProductDetailsContent({ id }: { id: string }) {
         {/* ================= RELATED PRODUCTS ================= */}
         <section className="mt-24">
           <h2 className="text-3xl md:text-4xl font-bold mb-10 text-gray-900 text-center">
-            You Might Also Like
+            You Might Also Like This
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {products.map((product, index) => (
+            {sameOtherProducts.map((product, index) => (
               <div
                 key={index}
                 className="relative group overflow-hidden rounded-lg shadow-md hover:shadow-xl bg-white transition-shadow duration-300 cursor-pointer"
@@ -426,11 +442,11 @@ function ProductDetailsContent({ id }: { id: string }) {
                     </Link>
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {product.category}
+                    {product.brand}
                   </p>
                   <div className="flex items-center justify-between mt-3">
                     <p className="text-xl font-semibold text-foreground">
-                      ${product.price.toFixed(2)}
+                      {product.price.toFixed(2)} ETB
                     </p>
 
                     <div className="flex items-center text-blue-500 gap-0.5">

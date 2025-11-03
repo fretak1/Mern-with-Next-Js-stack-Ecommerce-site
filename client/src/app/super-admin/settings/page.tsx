@@ -16,7 +16,7 @@ function SuperAdminSettingPage() {
   const { products, fetchAllProductsForAdmin } = useProductStore();
   const {
     banners,
-    isLoading, // This isLoading is for the entire settings store operations
+    isLoading,
     error,
     featchBanners,
 
@@ -24,8 +24,6 @@ function SuperAdminSettingPage() {
   } = useSettingsStore();
 
   const [isSavingBanners, setIsSavingBanners] = useState(false);
-  const [isSavingFeaturedProducts, setIsSavingFeaturedProducts] =
-    useState(false);
 
   const pageLoadRef = useRef(false);
 
@@ -37,7 +35,6 @@ function SuperAdminSettingPage() {
     }
   }, [fetchAllProductsForAdmin, featchBanners]);
 
-  // Handle errors from the store
   useEffect(() => {
     if (error) {
       toast.error(error);
@@ -53,21 +50,6 @@ function SuperAdminSettingPage() {
 
   const removeImage = (getCurrentIndex: number) => {
     setUploadedFiles((prev) => prev.filter((_, i) => i !== getCurrentIndex));
-  };
-
-  const handleProductSelection = (productId: string) => {
-    setSelectedProducts((prev) => {
-      if (prev.includes(productId)) {
-        return prev.filter((id) => id !== productId);
-      }
-
-      if (prev.length >= 8) {
-        toast.info("You can select up to 8 products as featured");
-        return prev;
-      }
-
-      return [...prev, productId];
-    });
   };
 
   const handleSaveChanges = async () => {
@@ -93,12 +75,11 @@ function SuperAdminSettingPage() {
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 sm:p-8 lg:p-10">
         <header className="flex items-center justify-between pb-6 mb-8 border-b border-gray-200">
           <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-            Settings & Features
+            Settings
           </h1>
         </header>
 
         <div className="space-y-10">
-          {/* Banner Images Section */}
           <section>
             <h2 className="text-2xl font-bold text-gray-800 mb-6">
               Home Page Banners
@@ -149,8 +130,7 @@ function SuperAdminSettingPage() {
                         className="w-full h-full object-cover"
                       />
                       <Button
-                        variant="default" // Reverted to default variant for consistency, but kept color classes
-                        size="icon"
+                        variant="default"
                         onClick={() => removeImage(index)}
                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-full h-7 w-7 bg-blue-500 hover:bg-blue-600 text-white"
                       >
@@ -187,20 +167,12 @@ function SuperAdminSettingPage() {
 
           <div className="mt-8">
             <Button
-              disabled={
-                isLoading || isSavingBanners || isSavingFeaturedProducts
-              }
+              disabled={isLoading || isSavingBanners}
               onClick={handleSaveChanges}
               className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-md font-semibold text-base shadow-md transition-colors flex items-center justify-center gap-2"
             >
-              {(isLoading || isSavingBanners || isSavingFeaturedProducts) && (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              )}
-              {isSavingBanners
-                ? "Uploading Banners..."
-                : isSavingFeaturedProducts
-                ? "Updating Featured Products..."
-                : "Save All Changes"}
+              {isSavingBanners && <Loader2 className="h-5 w-5 animate-spin" />}
+              {isSavingBanners ? "Uploading Banners..." : "Save All Changes"}
             </Button>
           </div>
         </div>

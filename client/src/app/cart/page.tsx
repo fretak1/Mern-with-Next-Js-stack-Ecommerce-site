@@ -18,9 +18,14 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "next/navigation";
 
 function UserCartPage() {
-  const { fetchCart, items, isLoading, updateCartQuantity, removeFromCart } =
-    useCartStore();
-  const { user } = useAuthStore();
+  const {
+    fetchCart,
+    items,
+    isLoading: cartLoading,
+    updateCartQuantity,
+    removeFromCart,
+  } = useCartStore();
+  const { user, isLoading: userLoading } = useAuthStore();
   const [isUpdating, setIsupdating] = useState(false);
   const router = useRouter();
 
@@ -45,9 +50,18 @@ function UserCartPage() {
     if (user) fetchCart();
   }, [fetchCart, user]);
 
-  if (isLoading) return null;
+  if (cartLoading || userLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="w-16 h-16 border-4 border-t-blue-500 border-b-blue-500 border-l-blue-500 border-r-blue-200 rounded-full animate-spin"></div>
+        <p className="mt-6 text-lg md:text-xl font-medium text-gray-700 animate-pulse">
+          Loading your cart details...
+        </p>
+      </div>
+    );
+  }
 
-  // 🟢 Show message if user not logged in
+  //  Show message if user not logged in
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-6">
@@ -70,7 +84,7 @@ function UserCartPage() {
     );
   }
 
-  // 🟢 Show cart when user is logged in
+  // Show cart when user is logged in
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="container mx-auto px-6">
@@ -100,16 +114,16 @@ function UserCartPage() {
                     <TableHead className="text-left py-4 px-6 font-semibold">
                       Product
                     </TableHead>
-                    <TableHead className="text-right py-4 px-6 font-semibold">
+                    <TableHead className="text-center py-4 px-6 font-semibold">
                       Price
                     </TableHead>
                     <TableHead className="text-center py-4 px-6 font-semibold">
                       Quantity
                     </TableHead>
-                    <TableHead className="text-right py-4 px-6 font-semibold">
+                    <TableHead className="text-center py-4 px-6 font-semibold">
                       Total
                     </TableHead>
-                    <TableHead className="text-right py-4 px-6 font-semibold">
+                    <TableHead className="text-center py-4 px-6 font-semibold">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -142,7 +156,7 @@ function UserCartPage() {
                       </TableCell>
 
                       <TableCell className="py-6 px-6 text-right text-gray-700 font-medium">
-                        ${item.price}
+                        {item.price} ETB
                       </TableCell>
 
                       <TableCell className="py-6 px-6 text-center">
@@ -186,7 +200,7 @@ function UserCartPage() {
                       </TableCell>
 
                       <TableCell className="py-6 px-6 text-right font-semibold text-gray-900">
-                        ${(item.price * item.quantity).toFixed(2)}
+                        {(item.price * item.quantity).toFixed(2)} ETB
                       </TableCell>
 
                       <TableCell className="py-6 px-6 text-right">
@@ -211,7 +225,7 @@ function UserCartPage() {
                 <div className="flex justify-between items-center text-lg">
                   <span className="text-gray-700 font-medium">Subtotal</span>
                   <span className="font-bold text-gray-900">
-                    ${total.toFixed(2)}
+                    {total.toFixed(2)} ETB
                   </span>
                 </div>
 
@@ -221,7 +235,9 @@ function UserCartPage() {
 
                 <div className="space-y-3">
                   <Button
-                    onClick={() => router.push("/checkout")}
+                    onClick={() => {
+                      router.push("/checkout");
+                    }}
                     className="w-full bg-blue-500 hover:bg-blue-400 text-white py-3 font-medium rounded-lg shadow"
                   >
                     Proceed to Checkout

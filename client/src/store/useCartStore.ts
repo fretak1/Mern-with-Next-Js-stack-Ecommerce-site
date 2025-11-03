@@ -2,6 +2,7 @@ import { API_ROUTES } from "@/utils/api";
 import axios from "axios";
 import { create } from "zustand";
 import debounce from "lodash/debounce";
+import { toast } from "sonner";
 
 export interface CartItem {
   id: string;
@@ -36,7 +37,15 @@ export const useCartStore = create<CartStore>((set, get) => {
             withCredentials: true,
           }
         );
-      } catch (e) {
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          toast.error("Your session has expired. Please login again.");
+          setTimeout(() => {
+            window.location.href = "/auth/login";
+          }, 1000);
+        } else {
+          toast.error("failed to update cart quantity.");
+        }
         set({ error: "Failed to update cart quantity" });
       }
     }
@@ -55,6 +64,14 @@ export const useCartStore = create<CartStore>((set, get) => {
 
         set({ items: response.data.data, isLoading: false });
       } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          toast.error("Your session has expired. Please login again.");
+          setTimeout(() => {
+            window.location.href = "/auth/login";
+          }, 1000);
+        } else {
+          toast.error("failed to fetch cart.");
+        }
         set({ error: "Failed to fetch cart", isLoading: false });
       }
     },
@@ -77,8 +94,15 @@ export const useCartStore = create<CartStore>((set, get) => {
 
         return response.data.success;
       } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          toast.error("Your session has expired. Please login again.");
+          setTimeout(() => {
+            window.location.href = "/auth/login";
+          }, 1000);
+        } else {
+          toast.error("failed to add cart.");
+        }
         set({ error: "Failed to add cart", isLoading: false });
-        console.log(error);
       }
     },
     removeFromCart: async (id) => {
@@ -93,6 +117,14 @@ export const useCartStore = create<CartStore>((set, get) => {
           isLoading: false,
         }));
       } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          toast.error("Your session has expired. Please login again.");
+          setTimeout(() => {
+            window.location.href = "/auth/login";
+          }, 1000);
+        } else {
+          toast.error("failed to remove the cart.");
+        }
         set({ error: "Failed to remove the cart", isLoading: false });
       }
     },
@@ -117,6 +149,14 @@ export const useCartStore = create<CartStore>((set, get) => {
 
         set({ items: [], isLoading: false });
       } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          toast.error("Your session has expired. Please login again.");
+          setTimeout(() => {
+            window.location.href = "/auth/login";
+          }, 1000);
+        } else {
+          toast.error("failed to clear the cart");
+        }
         set({ error: "Failed to clear the cart", isLoading: false });
       }
     },

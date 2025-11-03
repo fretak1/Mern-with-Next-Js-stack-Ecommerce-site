@@ -1,5 +1,7 @@
+import { Toaster } from "@/components/ui/sonner";
 import { API_ROUTES } from "@/utils/api";
 import axios from "axios";
+import { toast } from "sonner";
 import { create } from "zustand";
 
 type CommentStore = {
@@ -28,13 +30,14 @@ export const useMessageStore = create<CommentStore>((set) => ({
           isSending: false,
           success: "Your message has been sent successfully!",
         });
+        toast("Your message has been sent successfully!");
       } else {
         set({
           isSending: false,
           error: res.data.message || "Failed to send comment.",
         });
       }
-    } catch (err) {
+    } catch (error) {
       set({
         isSending: false,
         error: "An error occurred while sending your message.",

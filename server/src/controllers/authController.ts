@@ -8,11 +8,9 @@ import { sendEmail } from "../utils/sendEmail";
 const RESET_CODE_TTL_MINUTES = 15;
 
 function gen6DigitCode() {
-  // returns string with leading zeros if any
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// POST /auth/forgot-password
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
@@ -23,7 +21,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      // don't reveal whether email exists — respond success to avoid enumeration
       return res.status(200).json({
         success: true,
         message: "If the email exists, a code was sent.",
@@ -68,7 +65,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
   }
 };
 
-// POST /auth/verify-reset-code
 export const verifyResetCode = async (req: Request, res: Response) => {
   try {
     const { email, code } = req.body;
@@ -97,7 +93,6 @@ export const verifyResetCode = async (req: Request, res: Response) => {
       return;
     }
 
-    // success — allow client to proceed resetting password
     res.status(200).json({ success: true, message: "Code verified" });
   } catch (err) {
     console.error("verifyResetCode error", err);
@@ -105,7 +100,6 @@ export const verifyResetCode = async (req: Request, res: Response) => {
   }
 };
 
-// POST /auth/reset-password
 export const resetPassword = async (req: Request, res: Response) => {
   try {
     const { email, newPassword } = req.body;
@@ -129,7 +123,7 @@ export const resetPassword = async (req: Request, res: Response) => {
         password: hashed,
         resetCode: null,
         resetCodeExpires: null,
-        refreshToken: null, // force re-login
+        refreshToken: null,
       },
     });
 
@@ -166,9 +160,9 @@ async function setTokens(
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax", // safer for dev
+    sameSite: "lax",
     path: "/",
-    maxAge: 10 * 60 * 1000, // 1 hour
+    maxAge: 60 * 60 * 1000,
   });
 
   res.cookie("refreshToken", refreshToken, {
@@ -176,7 +170,7 @@ async function setTokens(
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
   if (userId) {
@@ -257,7 +251,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         email: extractCurrentUser.email,
         role: extractCurrentUser.role,
       },
-      accessToken, // return in body as fallback
+      accessToken,
       refreshToken,
     });
   } catch (error) {
@@ -334,7 +328,6 @@ export const checkAccess = async (
       return;
     }
 
-    // optional: fetch fresh user from DB (recommended)
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
       select: { id: true, name: true, email: true, role: true },

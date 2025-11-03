@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import ProductListingSkeleton from "@/components/user/productListingSkeleton";
 import { useProductStore } from "@/store/useProductStore";
 import { brands, categories, colors, sizes } from "@/utils/conifg";
 import {
@@ -211,8 +212,6 @@ function ProductListingPage() {
     </div>
   );
 
-  console.log(products.length, "ddddddd");
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Main content */}
@@ -264,7 +263,7 @@ function ProductListingPage() {
           {/* Product Cards */}
           <main className="flex-1">
             {isLoading ? (
-              <div className="text-center py-20 text-gray-500">Loading...</div>
+              <ProductListingSkeleton />
             ) : error ? (
               <div className="text-center py-20 text-red-500">{error}</div>
             ) : products.length === 0 ? (
@@ -300,7 +299,7 @@ function ProductListingPage() {
                         </Link>
                       </h3>
                       <p className="text-sm text-muted-foreground mt-1">
-                        {product.category}
+                        {product.brand}
                       </p>
                       <div className="flex items-center justify-between mt-3">
                         <p className="text-xl font-semibold text-gray-900">

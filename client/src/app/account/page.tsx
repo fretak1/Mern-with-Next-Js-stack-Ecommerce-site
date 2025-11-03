@@ -22,10 +22,9 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Address, useAddressStore } from "@/store/useAddressStore";
-import { useOrderStore, Order } from "@/store/useOrderStore"; // <--- Import 'Order' type
+import { useOrderStore, Order } from "@/store/useOrderStore";
 import { useEffect, useState } from "react";
-import { toast } from "sonner"; // Assuming sonner is installed for toasts
-import { Loader2 } from "lucide-react"; // Import Loader2 for a better loading indicator
+import { toast } from "sonner";
 
 const initialAddressFormState = {
   name: "",
@@ -55,6 +54,8 @@ export default function UserAccountPage() {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<string | null>(null);
   const [formData, setFormData] = useState(initialAddressFormState);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [addressToDelete, setAddressToDelete] = useState<string | null>(null);
 
   // Fetch data on component mount
   useEffect(() => {
@@ -85,7 +86,7 @@ export default function UserAccountPage() {
       setShowAddressForm(false);
       setEditingAddress(null);
       setFormData(initialAddressFormState);
-      featchAddress(); // Re-fetch addresses to update UI
+      featchAddress();
     } catch (error) {
       toast.error("Failed to save address.");
       console.error("Error saving address:", error);
@@ -109,23 +110,34 @@ export default function UserAccountPage() {
 
   // Handle address deletion
   const handleDeleteAddress = async (id: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this address?"
-    );
-    if (confirmed) {
-      try {
-        const success = await deleteAddress(id);
-        if (success) toast.success("Address Deleted Successfully");
-        else toast.error("Failed to delete address.");
-      } catch (error) {
-        toast.error("An error occurred while deleting address.");
-        console.error("Error deleting address:", error);
+    setAddressToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setAddressToDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!addressToDelete) return;
+    try {
+      const success = await deleteAddress(addressToDelete);
+      if (success) {
+        toast.success("Address Deleted Successfully");
+        featchAddress();
+      } else {
+        toast.error("Failed to delete address.");
       }
+    } catch (error) {
+      toast.error("An error occurred while deleting address.");
+      console.error("Error deleting address:", error);
+    } finally {
+      closeDeleteModal();
     }
   };
 
   // Helper function for order status badge styling
-  // <--- FIX IS HERE: Updated the status parameter type
   const getStatusVariant = (status: Order["status"]) => {
     switch (status) {
       case "PENDING":
@@ -136,8 +148,8 @@ export default function UserAccountPage() {
         return "bg-purple-100 text-purple-800 border-purple-200";
       case "DELIVERED":
         return "bg-green-100 text-green-800 border-green-200";
-      case "CANCELLED": // <--- Added case for CANCELLED
-        return "bg-red-100 text-red-800 border-red-200"; // Red for cancelled
+      case "CANCELLED":
+        return "bg-red-100 text-red-800 border-red-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
@@ -145,9 +157,9 @@ export default function UserAccountPage() {
 
   if (ordersLoading || addressesLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-10 w-10 animate-spin text-primary-500" />
-        <p className="ml-4 text-xl text-gray-600">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="w-16 h-16 border-4 border-t-blue-500 border-b-blue-500 border-l-blue-500 border-r-blue-200 rounded-full animate-spin"></div>
+        <p className="mt-6 text-lg md:text-xl font-medium text-gray-700 animate-pulse">
           Loading your account details...
         </p>
       </div>
@@ -223,40 +235,36 @@ export default function UserAccountPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody className="bg-white divide-y divide-gray-100">
-                      {userOrders.map(
-                        (
-                          order: Order // Explicitly type 'order' here too for safety
-                        ) => (
-                          <TableRow
-                            key={order.id}
-                            className="hover:bg-gray-50 transition-colors duration-200"
-                          >
-                            <TableCell className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                              {order.id.substring(0, 8)}...
-                            </TableCell>
-                            <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                              {new Date(order.createdAt).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                              {order.items.length}{" "}
-                              {order.items.length === 1 ? "item" : "items"}
-                            </TableCell>
-                            <TableCell className="px-6 py-4 whitespace-nowrap text-sm">
-                              <Badge
-                                className={`${getStatusVariant(
-                                  order.status
-                                )} px-3 py-1 text-xs font-semibold rounded-full border`}
-                              >
-                                {order.status.charAt(0) +
-                                  order.status.slice(1).toLowerCase()}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="px-6 py-4 whitespace-nowrap text-base font-semibold text-gray-900">
-                              ${order.total.toFixed(2)}
-                            </TableCell>
-                          </TableRow>
-                        )
-                      )}
+                      {userOrders.map((order: Order) => (
+                        <TableRow
+                          key={order.id}
+                          className="hover:bg-gray-50 transition-colors duration-200"
+                        >
+                          <TableCell className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                            {order.id.substring(0, 8)}...
+                          </TableCell>
+                          <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {order.items.length}{" "}
+                            {order.items.length === 1 ? "item" : "items"}
+                          </TableCell>
+                          <TableCell className="px-6 py-4 whitespace-nowrap text-sm">
+                            <Badge
+                              className={`${getStatusVariant(
+                                order.status
+                              )} px-3 py-1 text-xs font-semibold rounded-full border`}
+                            >
+                              {order.status.charAt(0) +
+                                order.status.slice(1).toLowerCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="px-6 py-4 whitespace-nowrap text-base font-semibold text-gray-900">
+                            {order.total.toFixed(2)} ETB
+                          </TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
                 </div>
@@ -436,6 +444,35 @@ export default function UserAccountPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {deleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-lg">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Confirm Delete
+            </h3>
+            <p className="text-sm text-gray-700 mb-6">
+              Are you sure you want to delete this address? This action cannot
+              be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button
+                onClick={closeDeleteModal}
+                variant="outline"
+                className="px-4 py-2 rounded-md"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmDelete}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { API_ROUTES } from "@/utils/api";
 import axios from "axios";
+import { toast } from "sonner";
 import { create } from "zustand";
 
 export interface Review {
@@ -34,9 +35,9 @@ interface ProductState {
   isLoading: boolean;
   error: string | null;
   currentPage: number;
+  hasFetched: boolean;
   totalPages: number;
   totalProducts: number;
-  // Product functions
   fetchAllProductsForAdmin: () => Promise<void>;
   createProduct: (productData: FormData) => Promise<Product>;
   updateProduct: (id: string, productData: FormData) => Promise<Product>;
@@ -62,36 +63,44 @@ interface ProductState {
     type: string;
   }) => Promise<void>;
   setCurrentPage: (page: number) => void;
-  // Newsletter functions
-  subscribeEmail: (
-    email: string
-  ) => Promise<{ success: boolean; message: string }>;
-  newsletterLoading: boolean;
-  newsletterError: string | null;
-  newsletterSuccess: string | null;
 }
 
 export const useProductStore = create<ProductState>((set, get) => ({
   products: [],
   isLoading: false,
+  hasFetched: false,
   error: null,
   currentPage: 1,
   totalPages: 1,
   totalProducts: 0,
-  newsletterLoading: false,
-  newsletterError: null,
-  newsletterSuccess: null,
 
   fetchAllProductsForAdmin: async () => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, hasFetched: false });
     try {
       const response = await axios.get(
         `${API_ROUTES.PRODUCTS}/fetch-admin-products`,
         { withCredentials: true }
       );
-      set({ products: response.data.allProducts, isLoading: false });
+      set({
+        products: response.data.allProducts,
+        isLoading: false,
+        hasFetched: true,
+      });
     } catch (e) {
-      set({ error: "Failed to fetch product", isLoading: false });
+      if (axios.isAxiosError(e) && e.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to fetch product.");
+      }
+
+      set({
+        error: "Failed to fetch product",
+        isLoading: false,
+        hasFetched: true,
+      });
     }
   },
 
@@ -109,6 +118,14 @@ export const useProductStore = create<ProductState>((set, get) => ({
       set({ isLoading: false });
       return response.data;
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to create product.");
+      }
       set({ error: "Failed to create product", isLoading: false });
     }
   },
@@ -127,6 +144,14 @@ export const useProductStore = create<ProductState>((set, get) => ({
       set({ isLoading: false });
       return response.data;
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to update product.");
+      }
       set({ error: "Failed to update product", isLoading: false });
     }
   },
@@ -140,6 +165,14 @@ export const useProductStore = create<ProductState>((set, get) => ({
       set({ isLoading: false });
       return response.data.success;
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to delete product.");
+      }
       set({ error: "Failed to delete product", isLoading: false });
     }
   },
@@ -153,6 +186,14 @@ export const useProductStore = create<ProductState>((set, get) => ({
       set({ isLoading: false });
       return response.data.product;
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to fetch product.");
+      }
       set({ error: "Failed to fetch product", isLoading: false });
     }
   },
@@ -169,7 +210,14 @@ export const useProductStore = create<ProductState>((set, get) => ({
       );
       return response.data;
     } catch (error) {
-      console.error("Error adding review:", error);
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to add review.");
+      }
       return null;
     }
   },
@@ -196,8 +244,16 @@ export const useProductStore = create<ProductState>((set, get) => ({
         totalProducts: response.data.totalProduct,
         isLoading: false,
       });
-    } catch (e) {
-      set({ error: "Failed to fetch products", isLoading: false });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to fetch filtered product.");
+      }
+      set({ error: "Failed to fetch filtered products", isLoading: false });
     }
   },
 
@@ -212,34 +268,17 @@ export const useProductStore = create<ProductState>((set, get) => ({
       );
       set({ products: response.data.products, isLoading: false });
     } catch (error) {
-      console.error("Failed to fetch products:", error);
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to fetch product.");
+      }
       set({ error: "Failed to fetch products", isLoading: false });
     }
   },
 
   setCurrentPage: (page: number) => set({ currentPage: page }),
-
-  // ========================
-  // Newsletter subscription
-  // ========================
-  subscribeEmail: async (email: string) => {
-    set({
-      newsletterLoading: true,
-      newsletterError: null,
-      newsletterSuccess: null,
-    });
-    try {
-      const res = await axios.post(
-        `${API_ROUTES.NEWSLETTER}/subscribe`,
-        { email },
-        { withCredentials: true }
-      );
-      set({ newsletterSuccess: res.data.message, newsletterLoading: false });
-      return { success: true, message: res.data.message };
-    } catch (err: any) {
-      const msg = err.response?.data?.message || "Subscription failed";
-      set({ newsletterError: msg, newsletterLoading: false });
-      return { success: false, message: msg };
-    }
-  },
 }));

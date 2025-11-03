@@ -9,7 +9,6 @@ export const addToCart = async (
   try {
     const userId = req.user?.userId;
     const { productId, quantity, size, color } = req.body;
-    console.log(req.body, "incarttttttttt");
 
     if (!userId) {
       res.status(401).json({
@@ -19,7 +18,7 @@ export const addToCart = async (
       return;
     }
 
-    if (!productId || !quantity || !color) {
+    if (!productId || !quantity) {
       res.status(400).json({
         success: false,
         message: "Product ID, quantity, and color are required.",
@@ -27,14 +26,12 @@ export const addToCart = async (
       return;
     }
 
-    // ensure user has a cart
     const cart = await prisma.cart.upsert({
       where: { userId },
       create: { userId },
       update: {},
     });
 
-    // find if cart item already exists (ignore size if null)
     const existingItem = await prisma.cartItem.findFirst({
       where: {
         cartId: cart.id,
@@ -47,13 +44,11 @@ export const addToCart = async (
     let cartItem;
 
     if (existingItem) {
-      // update quantity if item exists
       cartItem = await prisma.cartItem.update({
         where: { id: existingItem.id },
         data: { quantity: { increment: quantity } },
       });
     } else {
-      // create a new cart item
       cartItem = await prisma.cartItem.create({
         data: {
           cartId: cart.id,
@@ -65,7 +60,6 @@ export const addToCart = async (
       });
     }
 
-    // get product details
     const product = await prisma.product.findUnique({
       where: { id: productId },
       select: {

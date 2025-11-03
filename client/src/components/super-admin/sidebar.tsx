@@ -46,6 +46,7 @@ const menuItems = [
     icon: ListOrdered,
     href: "/super-admin/coupons/add",
   },
+  { name: "Newsletter", icon: FileText, href: "/super-admin/newsletter" },
   {
     name: "Settings",
     icon: Settings,
@@ -54,7 +55,7 @@ const menuItems = [
   {
     name: "Logout",
     icon: LogOut,
-    href: "", // Special case for logout
+    href: "",
   },
 ];
 
@@ -110,19 +111,17 @@ function SuperAdminSidebar({ isOpen, toggle }: SidebarProps) {
                 className={`flex cursor-pointer items-center py-3 text-sm font-medium transition-colors duration-200
                   ${
                     isOpen
-                      ? // Open sidebar styling (light mode)
-                        `px-6 rounded-lg mx-2
+                      ? `px-6 rounded-lg mx-2
                           ${
                             isActive
-                              ? "bg-blue-500 text-primary-foreground shadow-sm" // Active state
-                              : "text-gray-700 hover:bg-gray-200 hover:text-gray-900" // Default state
+                              ? "bg-blue-500 text-primary-foreground shadow-sm"
+                              : "text-gray-700 hover:bg-gray-200 hover:text-gray-900"
                           }`
-                      : // Closed sidebar styling (light mode)
-                        `justify-center px-0
+                      : `justify-center px-0
                           ${
                             isActive
-                              ? "bg-blue-500 text-primary-foreground" // Active state
-                              : "text-gray-700 hover:bg-gray-200 hover:text-gray-900" // Default state
+                              ? "bg-blue-500 text-primary-foreground"
+                              : "text-gray-700 hover:bg-gray-200 hover:text-gray-900"
                           }`
                   }
                   ${

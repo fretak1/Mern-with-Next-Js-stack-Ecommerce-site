@@ -7,7 +7,7 @@ import { useCouponStore } from "@/store/useCouponStore";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react"; // Import Loader2 for loading animation
+import { Loader2 } from "lucide-react";
 
 function SuperAdminManageCouponsPage() {
   const [formData, setFormData] = useState({
@@ -61,7 +61,6 @@ function SuperAdminManageCouponsPage() {
       return;
     }
 
-    // Ensure discountPercent and usageLimit are numbers before passing
     const couponData = {
       ...formData,
       discountPercent: parseFloat(formData.discountPercent.toString()),
@@ -70,10 +69,10 @@ function SuperAdminManageCouponsPage() {
 
     const result = await createCoupon(couponData);
     if (result) {
-      toast.success("Coupon Added Successfully"); // Using toast.success
+      toast.success("Coupon Added Successfully");
       router.push("/super-admin/coupons/list");
     } else {
-      toast.error("Failed to create coupon. Please try again."); // Generic error message if result is false
+      toast.error("Failed to create coupon. Please try again.");
     }
   };
 
@@ -84,10 +83,6 @@ function SuperAdminManageCouponsPage() {
           <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
             Create New Coupon
           </h1>
-          {/* Optionally add a back button here */}
-          {/* <Button variant="outline" onClick={() => router.back()} className="text-gray-700 border-gray-300 hover:bg-gray-50">
-            Back to Coupons
-          </Button> */}
         </header>
         <form
           onSubmit={handleCouponSubmit}
@@ -172,7 +167,7 @@ function SuperAdminManageCouponsPage() {
                 value={formData.discountPercent}
                 onChange={handleInputChange}
                 required
-                min="1" // Add min value for better validation
+                min="1"
               />
             </div>
             <div>
@@ -191,7 +186,7 @@ function SuperAdminManageCouponsPage() {
                 value={formData.usageLimit}
                 onChange={handleInputChange}
                 required
-                min="1" // Add min value for better validation
+                min="1"
               />
             </div>
             <Button

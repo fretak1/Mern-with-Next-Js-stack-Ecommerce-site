@@ -1,20 +1,18 @@
 "use client";
 
-import { paymentAction } from "@/actions/payment";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useAddressStore } from "@/store/useAddressStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { CartItem, useCartStore } from "@/store/useCartStore";
 import { Coupon, useCouponStore } from "@/store/useCouponStore";
 import { useOrderStore } from "@/store/useOrderStore";
 import { useProductStore } from "@/store/useProductStore";
-import { PayPalButtons } from "@paypal/react-paypal-js";
+import { usePaymentStore } from "@/store/usePaymentStore";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -23,7 +21,6 @@ export function CheckoutContent() {
   const { addresses, featchAddress } = useAddressStore();
   const [selectedAddress, setSelectedAddress] = useState("");
   const [couponCode, setCouponCode] = useState("");
-  const [showPaymentFlow, setShowPaymentFlow] = useState(false);
   const [cartItemsWithDetails, setCartItemsWithDetails] = useState<
     (CartItem & { product: any })[]
   >([]);
@@ -33,14 +30,9 @@ export function CheckoutContent() {
   const [checkoutEmail, setCheckoutEmail] = useState("");
   const { items, fetchCart, clearCart } = useCartStore();
   const { getProductById } = useProductStore();
-
-  const {
-    createPayPalOrder,
-    capturePayPalOrder,
-    createOrder,
-    isPaymentProcessing,
-  } = useOrderStore();
   const { fetchCoupons, couponList } = useCouponStore();
+  const { initializePayment, isLoading } = usePaymentStore();
+  const { createOrder, createChapaOrder } = useOrderStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -69,6 +61,7 @@ export function CheckoutContent() {
     fetchProductDetails();
   }, [items, getProductById]);
 
+  // Apply Coupon
   function handleApplyCoupon() {
     const coupon = couponList.find((c) => c.code === couponCode);
 
@@ -95,49 +88,7 @@ export function CheckoutContent() {
     setCouponAppliedError("");
   }
 
-  const handlePrePaymentFlow = async () => {
-    const result = await paymentAction(checkoutEmail);
-    if (!result.success) {
-      toast(result.error);
-      return;
-    }
-    setShowPaymentFlow(true);
-  };
-
-  const handleFinalOrderCreation = async (data: any) => {
-    if (!user) return toast("User not authenticated");
-
-    try {
-      const orderData = {
-        userId: user.id,
-        addressId: selectedAddress,
-        items: cartItemsWithDetails.map((item) => ({
-          productId: item.productId,
-          productName: item.product.name,
-          productCategory: item.product.category,
-          quantity: item.quantity,
-          size: item.size,
-          color: item.color,
-          price: item.product.price,
-        })),
-        couponId: appliedCoupon?.id,
-        total,
-        paymentMethod: "CREDIT_CARD" as const,
-        paymentStatus: "COMPLETED" as const,
-        paymentId: data.id,
-      };
-
-      const response = await createOrder(orderData);
-      if (response) {
-        await clearCart();
-        router.push("/account");
-      } else toast("There was an issue processing your order.");
-    } catch (error) {
-      console.error(error);
-      toast("Error while processing final order.");
-    }
-  };
-
+  // Totals
   const subTotal = cartItemsWithDetails.reduce(
     (acc, item) => acc + (item.product?.price || 0) * item.quantity,
     0
@@ -147,23 +98,78 @@ export function CheckoutContent() {
     : 0;
   const total = subTotal - discount;
 
-  if (isPaymentProcessing) {
+  // Handle payment initialization
+  const handlePayment = async () => {
+    if (!user) return toast("Please log in to continue.");
+    if (!selectedAddress) return toast("Please select a delivery address.");
+    if (!checkoutEmail) return toast("Enter your email before proceeding.");
+    if (cartItemsWithDetails.length === 0) return toast("Your cart is empty.");
+
+    // Generate a unique transaction reference
+    const txRef = `chapa-${Date.now()}-${user.id}`;
+    const customerName = user.name || "Customer";
+
+    const initialOrderData = {
+      userId: user.id,
+      addressId: selectedAddress,
+      items: cartItemsWithDetails.map((item) => ({
+        productId: item.productId,
+        productName: item.product.name,
+        productCategory: item.product.category,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        price: item.product.price,
+      })),
+      couponId: appliedCoupon?.id,
+      total: total,
+      txRef: txRef,
+      paymentMethod: "CHAPA" as const,
+      paymentStatus: "PENDING" as const,
+    };
+
+    const pendingOrder = await createChapaOrder(initialOrderData);
+
+    if (!pendingOrder) {
+      return toast.error(
+        "Failed to save initial order. Cannot proceed with payment."
+      );
+    }
+
+    // 3.  STEP 2: INITIALIZE CHAPA PAYMENT (Redirecting the user)
+    const paymentData = {
+      amount: total,
+      currency: "ETB",
+      customerEmail: checkoutEmail,
+      customerName: customerName,
+      txRef,
+    };
+
+    try {
+      await initializePayment(paymentData);
+    } catch (err) {
+      console.error("Chapa Initialization Error:", err);
+      toast.error("Error initiating Chapa payment. Please try again.");
+    }
+  };
+
+  if (isLoading) {
     return (
-      <Skeleton className="w-full h-[600px] rounded-xl flex items-center justify-center">
-        <h1 className="text-2xl font-semibold">
-          Processing Payment... Please Wait
-        </h1>
-      </Skeleton>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="w-16 h-16 border-4 border-t-blue-500 border-b-blue-500 border-l-blue-500 border-r-blue-200 rounded-full animate-spin"></div>
+        <p className="mt-6 text-lg md:text-xl font-medium text-gray-700 animate-pulse">
+          Proccessing Payment Please Wait ...
+        </p>
+      </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gray-50 py-10">
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Side */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Delivery */}
+            {/* Delivery Address */}
             <Card className="p-6 shadow-md border border-gray-100">
               <h2 className="text-2xl font-semibold mb-4 text-gray-800">
                 Delivery Address
@@ -222,63 +228,29 @@ export function CheckoutContent() {
 
             {/* Payment Section */}
             <Card className="p-6 shadow-md border border-gray-100">
-              {showPaymentFlow ? (
-                <div>
-                  <h3 className="text-2xl font-semibold mb-4 text-gray-800">
-                    Payment
-                  </h3>
-                  <p className="mb-3 text-gray-600">
-                    All transactions are secure and encrypted.
-                  </p>
-                  <PayPalButtons
-                    style={{
-                      layout: "vertical",
-                      color: "silver",
-                      shape: "rect",
-                      label: "pay",
-                    }}
-                    fundingSource="card"
-                    createOrder={async () => {
-                      const orderId = await createPayPalOrder(
-                        cartItemsWithDetails,
-                        total
-                      );
-                      if (!orderId)
-                        throw new Error("Failed to create PayPal order");
-                      return orderId;
-                    }}
-                    onApprove={async (data) => {
-                      const captureData = await capturePayPalOrder(
-                        data.orderID
-                      );
-                      if (captureData)
-                        await handleFinalOrderCreation(captureData);
-                      else alert("Failed to capture PayPal order");
-                    }}
-                  />
-                </div>
-              ) : (
-                <div>
-                  <h3 className="text-2xl font-semibold mb-4 text-gray-800">
-                    Enter Your Email to Continue
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="email"
-                      placeholder="Enter your email address"
-                      className="w-full"
-                      value={checkoutEmail}
-                      onChange={(e) => setCheckoutEmail(e.target.value)}
-                    />
-                    <Button
-                      onClick={handlePrePaymentFlow}
-                      className="bg-blue-500 hover:bg-blue-400 text-white transition-all duration-200"
-                    >
-                      Proceed to Buy
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <h3 className="text-2xl font-semibold mb-4 text-gray-800">
+                Payment
+              </h3>
+              <p className="mb-3 text-gray-600">
+                Secure payments are powered by{" "}
+                <span className="font-semibold text-blue-600">Chapa</span>.
+              </p>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="email"
+                  placeholder="Enter your email address"
+                  className="w-full"
+                  value={checkoutEmail}
+                  onChange={(e) => setCheckoutEmail(e.target.value)}
+                />
+                <Button
+                  onClick={handlePayment}
+                  disabled={isLoading}
+                  className="bg-blue-500 hover:bg-blue-400 text-white transition-all duration-200"
+                >
+                  {isLoading ? "Processing..." : "Proceed to Pay"}
+                </Button>
+              </div>
             </Card>
           </div>
 
@@ -310,7 +282,7 @@ export function CheckoutContent() {
                       </p>
                     </div>
                     <p className="font-medium text-gray-700">
-                      ${(item.product.price * item.quantity).toFixed(2)}
+                      {(item.product.price * item.quantity).toFixed(2)} ETB
                     </p>
                   </div>
                 ))}
@@ -344,12 +316,12 @@ export function CheckoutContent() {
                 <div className="space-y-2 text-gray-700">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>${subTotal.toFixed(2)}</span>
+                    <span>{subTotal.toFixed(2)} ETB</span>
                   </div>
                   {appliedCoupon && (
                     <div className="flex justify-between text-green-500">
                       <span>Discount ({appliedCoupon.discountPercent}%)</span>
-                      <span>-${discount.toFixed(2)}</span>
+                      <span>-{discount.toFixed(2)} ETB</span>
                     </div>
                   )}
                 </div>
@@ -358,7 +330,7 @@ export function CheckoutContent() {
 
                 <div className="flex justify-between font-semibold text-lg text-gray-900">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>{total.toFixed(2)} ETB</span>
                 </div>
               </div>
             </Card>

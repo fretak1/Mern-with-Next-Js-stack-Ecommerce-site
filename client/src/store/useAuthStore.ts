@@ -2,7 +2,7 @@ import { API_ROUTES } from "@/utils/api";
 import axios from "axios";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { toast } from "sonner"; // ✅ Make sure you have sonner installed: npm i sonner
+import { toast } from "sonner";
 
 type User = {
   id: string;
@@ -24,7 +24,6 @@ type AuthStore = {
   logout: () => Promise<void>;
   fetchCurrentUser: () => Promise<void>;
 
-  // Forgot password flow
   sendResetCode: (email: string) => Promise<boolean>;
   verifyResetCode: (email: string, code: string) => Promise<boolean>;
   resetPassword: (email: string, newPassword: string) => Promise<boolean>;
@@ -42,7 +41,6 @@ export const useAuthStore = create<AuthStore>()(
       isLoading: false,
       error: null,
 
-      // ✅ Register
       register: async (name, email, password) => {
         set({ isLoading: true, error: null });
         try {
@@ -65,7 +63,6 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      // ✅ Login
       login: async (email, password) => {
         set({ isLoading: true, error: null });
         try {
@@ -82,12 +79,13 @@ export const useAuthStore = create<AuthStore>()(
               ? error?.response?.data?.error || "Login failed"
               : "Login failed",
           });
-          toast.error("Login failed");
+          if (axios.isAxiosError(error) && error.response?.status === 401) {
+            toast.error("Incorrect Password or Email.");
+          }
           return false;
         }
       },
 
-      // ✅ Send reset code
       sendResetCode: async (email: string) => {
         set({ isLoading: true, error: null });
         try {
@@ -107,7 +105,6 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      // ✅ Verify code
       verifyResetCode: async (email: string, code: string) => {
         set({ isLoading: true, error: null });
         try {
@@ -126,7 +123,6 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      // ✅ Reset password
       resetPassword: async (email, newPassword) => {
         set({ isLoading: true, error: null });
         try {
@@ -145,7 +141,6 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      // ✅ Logout
       logout: async () => {
         try {
           await axiosInstance.post("/logout");
@@ -155,16 +150,16 @@ export const useAuthStore = create<AuthStore>()(
         toast.success("Logged out successfully");
       },
 
-      // ✅ Fetch user
       fetchCurrentUser: async () => {
+        set({ isLoading: true, error: null });
         try {
           const response = await axiosInstance.get("/check-access", {
             withCredentials: true,
           });
-          set({ user: response.data.user });
+          set({ user: response.data.user, isLoading: false });
         } catch (err: any) {
           console.log("Fetch /check-access response failed");
-          set({ user: null });
+          set({ user: null, isLoading: false });
         }
       },
     }),

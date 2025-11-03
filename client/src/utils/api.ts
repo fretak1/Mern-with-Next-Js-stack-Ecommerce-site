@@ -10,4 +10,5 @@ export const API_ROUTES = {
   ORDER: `${API_BASE_URL}/api/order`,
   COMMENTS: `${API_BASE_URL}/api/messages`,
   NEWSLETTER: `${API_BASE_URL}/api/newsletter`,
+  PAYMENT: `${API_BASE_URL}/api/payment`,
 };
