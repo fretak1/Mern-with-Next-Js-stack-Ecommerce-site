@@ -17,8 +17,29 @@ import { Star } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/useAuthStore";
 
+interface Review {
+  userId: string;
+  rating: number;
+  comment?: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  brand: string;
+  price: number;
+  stock: number;
+  images: string[];
+  colors: string[];
+  sizes: string[];
+  category: string;
+  description: string;
+  rating?: number;
+  reviews: Review[];
+}
+
 function ProductDetailsContent({ id }: { id: string }) {
-  const [product, setProduct] = useState<any>(null);
+  const [product, setProduct] = useState<Product >(null);
   const {
     getProductById,
     isLoading,
@@ -46,7 +67,7 @@ function ProductDetailsContent({ id }: { id: string }) {
   useEffect(() => {
     if (product && user) {
       const existingReview = product.reviews.find(
-        (r: any) => r.userId === user.id
+        (r: Review) => r.userId === user.id
       );
       if (existingReview) {
         setUserReview({
