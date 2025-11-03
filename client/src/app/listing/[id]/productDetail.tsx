@@ -39,7 +39,7 @@ interface Product {
 }
 
 function ProductDetailsContent({ id }: { id: string }) {
-  const [product, setProduct] = useState<Product >(null);
+  const [product, setProduct] = useState<Product | null>(null);
   const {
     getProductById,
     isLoading,
