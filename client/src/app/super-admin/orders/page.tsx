@@ -179,7 +179,7 @@ interface OrderItem {
               </TableHeader>
 
               <TableBody>
-                {adminOrders.map((order, index) => (
+                {adminOrders.map((order: Order, index: number) => (
                   <TableRow
                     key={order.id}
                     className="hover:bg-gray-50 transition-colors border-t"
@@ -340,7 +340,7 @@ interface OrderItem {
                 </h3>
                 <div className="max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-3">
                   <ul className="space-y-2">
-                    {selectedOrder.items.map((item: any, i: number) => (
+                    {selectedOrder.items.map((item: OrderItem, i: number) => (
                       <li
                         key={i}
                         className="flex justify-between text-sm text-gray-700"
