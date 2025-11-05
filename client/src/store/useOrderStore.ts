@@ -14,6 +14,39 @@ interface OrderItem {
   price: number;
 }
 
+interface ChapaFinalizeResponse {
+  success: boolean;
+  message: string;
+  order: {
+    id: string;
+    userId: string;
+    addressId: string;
+    couponId: string | null;
+    total: number;
+    status: OrderStatus;
+    paymentMethod: "CHAPA" | "CASH" | "CREDIT_CARD";
+    paymentStatus: "PENDING" | "COMPLETED";
+    paymentId: string | null;
+    txRef: string;
+    createdAt: string;
+    updatedAt: string;
+    items: {
+      id: string;
+      orderId: string;
+      productId: string;
+      productName: string;
+      productCategory: string;
+      quantity: number;
+      size?: string;
+      color?: string;
+      price: number;
+      createdAt: string;
+      updatedAt: string;
+    }[];
+  };
+}
+
+
 type OrderStatus =
   | "PENDING"
   | "PROCESSING"
@@ -105,7 +138,7 @@ interface OrderStore {
     }
   ) => Promise<Order | null>;
 
-  finalizeChapaOrder: (txRef: string, chapaData: any) => Promise<boolean>;
+  finalizeChapaOrder: (txRef: string, chapaData: ChapaFinalizeResponse) => Promise<boolean>;
   createOrder: (orderData: CreateOrderData) => Promise<Order | null>;
   getOrder: (orderId: string) => Promise<Order | null>;
   updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<boolean>;
