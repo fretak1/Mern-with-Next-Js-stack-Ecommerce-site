@@ -16,20 +16,22 @@ import { usePaymentStore } from "@/store/usePaymentStore";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import type { Product } from "@/store/useProductStore";
+
 
 export function CheckoutContent() {
   const { addresses, featchAddress } = useAddressStore();
   const [selectedAddress, setSelectedAddress] = useState("");
   const [couponCode, setCouponCode] = useState("");
   const [cartItemsWithDetails, setCartItemsWithDetails] = useState<
-    (CartItem & { product: any })[]
+    (CartItem & { product: Product })[]
   >([]);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponAppliedError, setCouponAppliedError] = useState("");
   const { user } = useAuthStore();
   const [checkoutEmail, setCheckoutEmail] = useState("");
   const { items, fetchCart, clearCart } = useCartStore();
-  const { getProductById } = useProductStore();
+  const { getProductById,products } = useProductStore();
   const { fetchCoupons, couponList } = useCouponStore();
   const { initializePayment, isLoading } = usePaymentStore();
   const { createOrder, createChapaOrder } = useOrderStore();
@@ -48,18 +50,21 @@ export function CheckoutContent() {
     if (defaultAddress) setSelectedAddress(defaultAddress.id);
   }, [addresses]);
 
-  useEffect(() => {
-    const fetchProductDetails = async () => {
-      const details = await Promise.all(
-        items.map(async (item) => {
-          const product = await getProductById(item.productId);
-          return { ...item, product };
-        })
-      );
-      setCartItemsWithDetails(details);
-    };
-    fetchProductDetails();
-  }, [items, getProductById]);
+ useEffect(() => {
+  const fetchProductDetails = async () => {
+    const details = await Promise.all(
+      items.map(async (item) => {
+        const product = await getProductById(item.productId);
+        if (!product) return null; // skip items without a product
+        return { ...item, product };
+      })
+    );
+
+    // Remove null items
+    setCartItemsWithDetails(details.filter((d): d is CartItem & { product: Product } => d !== null));
+  };
+  fetchProductDetails();
+}, [items, getProductById]);
 
   // Apply Coupon
   function handleApplyCoupon() {
@@ -114,7 +119,7 @@ export function CheckoutContent() {
       addressId: selectedAddress,
       items: cartItemsWithDetails.map((item) => ({
         productId: item.productId,
-        productName: item.product.name,
+        productName: item.product.name ,
         productCategory: item.product.category,
         quantity: item.quantity,
         size: item.size,
