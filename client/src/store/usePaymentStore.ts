@@ -47,7 +47,7 @@ export const usePaymentStore = create<PaymentState>((set) => ({
           error: res.data.message || "Failed to initialize payment",
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         toast.error("Your session has expired. Please login again.");
         setTimeout(() => {
@@ -77,7 +77,7 @@ export const usePaymentStore = create<PaymentState>((set) => ({
           error: res.data.message || "Payment not verified",
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         toast.error("Your session has expired. Please login again.");
         setTimeout(() => {
