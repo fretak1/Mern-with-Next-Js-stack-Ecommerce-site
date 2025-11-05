@@ -36,6 +36,17 @@ const initialAddressFormState = {
   isDefault: false,
 };
 
+type AddressFormData = {
+  name: string;
+  address: string;
+  city: string;
+  country: string;
+  postalCode: string;
+  phone: string;
+  isDefault: boolean;
+};
+
+
 export default function UserAccountPage() {
   const {
     addresses,
@@ -53,7 +64,7 @@ export default function UserAccountPage() {
 
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<string | null>(null);
-  const [formData, setFormData] = useState(initialAddressFormState);
+  const [formData, setFormData] = useState<AddressFormData>(initialAddressFormState);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [addressToDelete, setAddressToDelete] = useState<string | null>(null);
 
@@ -203,7 +214,7 @@ export default function UserAccountPage() {
               {userOrders.length === 0 ? (
                 <div className="text-center py-12 bg-gray-50 rounded-lg">
                   <p className="text-gray-500 text-lg mb-4">
-                    You haven't placed any orders yet.
+                    You haven&apos;t placed any orders yet.
                   </p>
                   <Button
                     variant="outline"
@@ -312,7 +323,7 @@ export default function UserAccountPage() {
                         </Label>
                         <Input
                           id={field}
-                          value={(formData as any)[field]}
+                          value={formData[field as keyof AddressFormData]}
                           required
                           onChange={handleInputChange}
                           className="border-gray-300 focus:border-primary focus:ring-primary"
@@ -364,7 +375,7 @@ export default function UserAccountPage() {
                   {addresses.length === 0 ? (
                     <div className="text-center py-12 bg-gray-50 rounded-lg mb-6">
                       <p className="text-gray-500 text-lg mb-4">
-                        You haven't added any addresses yet.
+                        You haven&apos;t added any addresses yet.
                       </p>
                       <Button
                         onClick={() => {
