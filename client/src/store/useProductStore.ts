@@ -228,7 +228,7 @@ addReview: async (
     }
     return null;
   }
-}
+},
 
 
   getFilteredProducts: async (params) => {
