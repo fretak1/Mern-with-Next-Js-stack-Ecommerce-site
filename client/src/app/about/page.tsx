@@ -121,12 +121,12 @@ export default function AboutPage() {
           Discover amazing products and enjoy a seamless online shopping
           experience.
         </p>
-        <a
-          href="/listing"
-          className="inline-block px-8 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition"
-        >
-          Explore Our Store
-        </a>
+<Link
+  href="/listing"
+  className="inline-block px-8 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition"
+>
+  Explore Our Store
+</Link>
       </section>
     </div>
   );
