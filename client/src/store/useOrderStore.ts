@@ -138,7 +138,7 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
       });
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         toast.error("Your session has expired. Please login again.");
         // Optional redirect after a delay
@@ -177,7 +177,7 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
         set({ isLoading: false, error: response.data.message });
         return false;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         toast.error("Your session has expired. Please login again.");
         setTimeout(() => {
