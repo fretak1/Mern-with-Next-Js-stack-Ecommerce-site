@@ -106,7 +106,7 @@ interface OrderItem {
     }
   };
 
-  const openOrderDetails = (order: any) => {
+  const openOrderDetails = (order: Order) => {
     setSelectedOrder(order);
     setNewStatus(order.status);
     setIsDialogOpen(true);
