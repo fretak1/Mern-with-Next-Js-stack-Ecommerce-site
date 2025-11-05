@@ -1,4 +1,3 @@
-// 📄 useOrderStore.ts (Fixed)
 import { API_ROUTES } from "@/utils/api";
 import axios from "axios";
 import { toast } from "sonner";
@@ -64,7 +63,7 @@ export interface AdminOrder {
     address?: string;
     phone?: string;
     country?: string;
-    postalCode: String;
+    postalCode: string;
   };
 }
 
