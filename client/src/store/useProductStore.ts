@@ -11,6 +11,13 @@ export interface Review {
   createdAt: string;
 }
 
+interface AddReviewResponse {
+  success: boolean;
+  message: string;
+  averageRating: number;
+}
+
+
 export interface Product {
   id: string;
   name: string;
@@ -47,7 +54,7 @@ interface ProductState {
   addReview: (
     productId: string,
     data: { rating: number; comment?: string }
-  ) => Promise<any>;
+  ) => Promise<AddReviewResponse | null>;
   getFilteredProducts: (params: {
     page?: number;
     limit?: number;
@@ -198,29 +205,31 @@ export const useProductStore = create<ProductState>((set, get) => ({
     }
   },
 
-  addReview: async (
-    productId: string,
-    data: { rating: number; comment?: string }
-  ) => {
-    try {
-      const response = await axios.post(
-        `${API_ROUTES.PRODUCTS}/${productId}/review`,
-        data,
-        { withCredentials: true }
-      );
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        toast.error("Your session has expired. Please login again.");
-        setTimeout(() => {
-          window.location.href = "/auth/login";
-        }, 1000);
-      } else {
-        toast.error("Failed to add review.");
-      }
-      return null;
+addReview: async (
+  productId: string,
+  data: { rating: number; comment?: string }
+) => {
+  try {
+    const response = await axios.post<AddReviewResponse>(
+      `${API_ROUTES.PRODUCTS}/${productId}/review`,
+      data,
+      { withCredentials: true }
+    );
+
+    return response.data; // TypeScript knows this is AddReviewResponse
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      toast.error("Your session has expired. Please login again.");
+      setTimeout(() => {
+        window.location.href = "/auth/login";
+      }, 1000);
+    } else {
+      toast.error("Failed to add review.");
     }
-  },
+    return null;
+  }
+}
+
 
   getFilteredProducts: async (params) => {
     set({ isLoading: true, error: null });
