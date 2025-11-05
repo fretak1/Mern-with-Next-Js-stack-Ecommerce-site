@@ -66,7 +66,7 @@ export default function ForgotPasswordStepper() {
         {step === 1 && (
           <>
             <p className="text-sm text-gray-600 mb-4">
-              Enter the email associated with your account. We'll send a 6-digit
+              Enter the email associated with your account. We&apos;ll send a 6-digit
               code.
             </p>
             <Input
