@@ -50,7 +50,7 @@ export const useNewsletterStore = create<NewsletterStore>((set) => ({
       );
       set({ isLoading: false });
       return { success: true, message: res.data.message };
-    } catch (error: any) {
+    } catch (error: unknown) {
       const msg = error.response?.data?.message || "Subscription failed";
       set({ isLoading: false });
       return { success: false, message: msg };
