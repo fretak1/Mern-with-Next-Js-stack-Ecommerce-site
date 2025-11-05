@@ -157,7 +157,7 @@ export const useAuthStore = create<AuthStore>()(
             withCredentials: true,
           });
           set({ user: response.data.user, isLoading: false });
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.log("Fetch /check-access response failed");
           set({ user: null, isLoading: false });
         }
