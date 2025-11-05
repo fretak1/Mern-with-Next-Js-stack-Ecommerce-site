@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-
+import Link from "next/link";
 export default function AboutPage() {
   return (
     <div className="bg-gray-50 min-h-screen">
