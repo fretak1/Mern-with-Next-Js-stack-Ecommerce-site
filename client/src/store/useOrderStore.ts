@@ -204,7 +204,7 @@ createChapaOrder: async (orderData) => {
 },
 
 
-  finalizeChapaOrder: async (txRef) => {
+  finalizeChapaOrder: async (txRef : string) => {
     set({ isLoading: true, error: null });
     try {
       const response = await axios.put(
