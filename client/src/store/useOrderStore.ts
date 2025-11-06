@@ -156,41 +156,61 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
   adminOrders: [],
 
   createChapaOrder: async (orderData) => {
-    set({ isLoading: true, error: null, isPaymentProcessing: true });
-    try {
-      const response = await axios.post(
-        `${API_ROUTES.ORDER}/create-chapa-order`,
-        orderData,
-        { withCredentials: true }
-      );
+set({ isLoading: true, error: null, isPaymentProcessing: true });
 
-      set({
-        isLoading: false,
-        currentOrder: response.data,
-        isPaymentProcessing: false,
-      });
+try {
+const response = await axios.post(
+`${API_ROUTES.ORDER}/create-chapa-order`,
+orderData,
+{ withCredentials: true }
+);
 
-      return response.data;
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        toast.error("Your session has expired. Please login again.");
-        // Optional redirect after a delay
-        setTimeout(() => {
-          window.location.href = "/auth/login";
-        }, 1000);
-      } else {
-        toast.error(error.response?.data?.message);
-      }
-      set({
-        isLoading: false,
-        isPaymentProcessing: false,
-        error:
-          error.response?.data?.message ||
-          "Failed to create PENDING Chapa Order",
-      });
-      return null;
-    }
-  },
+```
+set({
+  isLoading: false,
+  currentOrder: response.data,
+  isPaymentProcessing: false,
+});
+
+return response.data;
+```
+
+} catch (error: unknown) {
+let msg = "Failed to create PENDING Chapa Order";
+
+```
+if (axios.isAxiosError(error)) {
+  // Axios-specific error
+  if (error.response?.status === 401) {
+    toast.error("Your session has expired. Please login again.");
+    setTimeout(() => {
+      window.location.href = "/auth/login";
+    }, 1000);
+  } else {
+    msg = error.response?.data?.message || msg;
+    toast.error(msg);
+  }
+} else if (error instanceof Error) {
+  // Generic JS error
+  msg = error.message;
+  toast.error(msg);
+} else {
+  // Fallback for unknown types
+  toast.error(msg);
+}
+
+set({
+  isLoading: false,
+  isPaymentProcessing: false,
+  error: msg,
+});
+
+return null;
+```
+
+}
+},
+
   finalizeChapaOrder: async (txRef, chapaData) => {
     set({ isLoading: true, error: null });
     try {
