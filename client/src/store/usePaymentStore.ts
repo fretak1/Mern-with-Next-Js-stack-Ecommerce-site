@@ -29,39 +29,52 @@ export const usePaymentStore = create<PaymentState>((set) => ({
   checkoutUrl: null,
 
   initializePayment: async (data) => {
-    try {
-      set({ isLoading: true, error: null, success: false });
-      const res = await axios.post(`${API_ROUTES.PAYMENT}/initialize`, data);
+  try {
+    set({ isLoading: true, error: null, success: false });
+    const res = await axios.post(`${API_ROUTES.PAYMENT}/initialize`, data);
 
-      if (res.data.success) {
-        set({
-          isLoading: false,
-          checkoutUrl: res.data.checkoutUrl,
-          success: true,
-        });
-        // Redirect user to Chapa checkout page
-        window.location.href = res.data.checkoutUrl;
-      } else {
-        set({
-          isLoading: false,
-          error: res.data.message || "Failed to initialize payment",
-        });
-      }
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        toast.error("Your session has expired. Please login again.");
+    if (res.data.success) {
+      set({
+        isLoading: false,
+        checkoutUrl: res.data.checkoutUrl,
+        success: true,
+      });
+      window.location.href = res.data.checkoutUrl;
+    } else {
+      set({
+        isLoading: false,
+        error: res.data.message || "Failed to initialize payment",
+      });
+    }
+  } catch (error: unknown) {
+    let msg = "Something went wrong";
+
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
+        msg = "Your session has expired. Please login again.";
+        toast.error(msg);
         setTimeout(() => {
           window.location.href = "/auth/login";
         }, 1000);
       } else {
-        toast.error(error.response?.data?.message);
+        msg = error.response?.data?.message || msg;
+        toast.error(msg);
       }
-      set({
-        isLoading: false,
-        error: error.response?.data?.message || "Something went wrong",
-      });
+    } else if (error instanceof Error) {
+      msg = error.message;
+      toast.error(msg);
+    } else {
+      toast.error(msg);
     }
-  },
+
+    set({
+      isLoading: false,
+      error: msg,
+      success: false,
+    });
+  }
+},
+
 
   verifyPayment: async (txRef) => {
     try {
@@ -77,20 +90,33 @@ export const usePaymentStore = create<PaymentState>((set) => ({
           error: res.data.message || "Payment not verified",
         });
       }
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        toast.error("Your session has expired. Please login again.");
-        setTimeout(() => {
-          window.location.href = "/auth/login";
-        }, 1000);
-      } else {
-        toast.error(error.response?.data?.message);
-      }
-      set({
-        success: false,
-        isLoading: false,
-        error: error.response?.data?.message || "Verification failed",
-      });
+   } catch (error: unknown) {
+  let msg = "Verification failed";
+
+  if (axios.isAxiosError(error)) {
+    if (error.response?.status === 401) {
+      msg = "Your session has expired. Please login again.";
+      toast.error(msg);
+      setTimeout(() => {
+        window.location.href = "/auth/login";
+      }, 1000);
+    } else {
+      msg = error.response?.data?.message || msg;
+      toast.error(msg);
     }
+  } else if (error instanceof Error) {
+    msg = error.message;
+    toast.error(msg);
+  } else {
+    toast.error(msg);
+  }
+
+  set({
+    success: false,
+    isLoading: false,
+    error: msg,
+  });
+}
+
   },
 }));
