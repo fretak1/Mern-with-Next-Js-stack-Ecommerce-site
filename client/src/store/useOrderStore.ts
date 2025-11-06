@@ -155,59 +155,53 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
   userOrders: [],
   adminOrders: [],
 
-  createChapaOrder: async (orderData) => {
-set({ isLoading: true, error: null, isPaymentProcessing: true });
+createChapaOrder: async (orderData) => {
+  set({ isLoading: true, error: null, isPaymentProcessing: true });
 
-try {
-const response = await axios.post(
-`${API_ROUTES.ORDER}/create-chapa-order`,
-orderData,
-{ withCredentials: true }
-);
+  try {
+    const response = await axios.post(
+      `${API_ROUTES.ORDER}/create-chapa-order`,
+      orderData,
+      { withCredentials: true }
+    );
 
-```
-set({
-  isLoading: false,
-  currentOrder: response.data,
-  isPaymentProcessing: false,
-});
+    set({
+      isLoading: false,
+      currentOrder: response.data,
+      isPaymentProcessing: false,
+    });
 
-return response.data;
-```
+    return response.data;
+  } catch (error: unknown) {
+    const defaultMsg = "Failed to create PENDING Chapa Order";
+    let msg = defaultMsg;
 
-} catch (error: unknown) {
-const defaultMsg = "Failed to create PENDING Chapa Order";
-let msg = defaultMsg;
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        msg = error.response?.data?.message || defaultMsg;
+        toast.error(msg);
+      }
+    } else if (error instanceof Error) {
+      msg = error.message;
+      toast.error(msg);
+    } else {
+      toast.error(defaultMsg);
+    }
 
-```
-if (axios.isAxiosError(error)) {
-  if (error.response?.status === 401) {
-    toast.error("Your session has expired. Please login again.");
-    setTimeout(() => {
-      window.location.href = "/auth/login";
-    }, 1000);
-  } else {
-    msg = error.response?.data?.message || defaultMsg;
-    toast.error(msg);
+    set({
+      isLoading: false,
+      isPaymentProcessing: false,
+      error: msg,
+    });
+
+    return null;
   }
-} else if (error instanceof Error) {
-  msg = error.message;
-  toast.error(msg);
-} else {
-  toast.error(defaultMsg);
-}
-
-set({
-  isLoading: false,
-  isPaymentProcessing: false,
-  error: msg,
-});
-
-return null;
-```
-
-}
-}
+},
 
 
   finalizeChapaOrder: async (txRef, chapaData) => {
