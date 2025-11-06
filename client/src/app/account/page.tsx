@@ -325,7 +325,8 @@ export default function UserAccountPage() {
                         </Label>
                         <Input
                           id={field}
-                          value={formData[field as keyof AddressFormData]}
+                          value={String(formData[field as keyof Omit<AddressFormData, "isDefault">] ?? "")}
+
                           required
                           onChange={handleInputChange}
                           className="border-gray-300 focus:border-primary focus:ring-primary"
