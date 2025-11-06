@@ -176,27 +176,25 @@ return response.data;
 ```
 
 } catch (error: unknown) {
-let msg = "Failed to create PENDING Chapa Order";
+const defaultMsg = "Failed to create PENDING Chapa Order";
+let msg = defaultMsg;
 
 ```
 if (axios.isAxiosError(error)) {
-  // Axios-specific error
   if (error.response?.status === 401) {
     toast.error("Your session has expired. Please login again.");
     setTimeout(() => {
       window.location.href = "/auth/login";
     }, 1000);
   } else {
-    msg = error.response?.data?.message || msg;
+    msg = error.response?.data?.message || defaultMsg;
     toast.error(msg);
   }
 } else if (error instanceof Error) {
-  // Generic JS error
   msg = error.message;
   toast.error(msg);
 } else {
-  // Fallback for unknown types
-  toast.error(msg);
+  toast.error(defaultMsg);
 }
 
 set({
@@ -209,7 +207,8 @@ return null;
 ```
 
 }
-},
+}
+
 
   finalizeChapaOrder: async (txRef, chapaData) => {
     set({ isLoading: true, error: null });
