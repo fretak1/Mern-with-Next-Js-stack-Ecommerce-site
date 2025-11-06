@@ -37,7 +37,7 @@ export default function CheckoutSuccessPage({
         return;
       }
 
-      const success = await finalizeChapaOrder(txRef, resolvedSearchParams);
+      const success = await finalizeChapaOrder(txRef);
 
       if (success) {
         setPaymentStatus("SUCCESS");
