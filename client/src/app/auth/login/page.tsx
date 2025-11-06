@@ -24,7 +24,7 @@ interface LoginCardProps {
   onSwitchToRegister: () => void;
 }
 
-export default function LoginCard({ onSwitchToRegister }: LoginCardProps) {
+export default function LoginPage({ onSwitchToRegister }: LoginCardProps) {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const { login, isLoading } = useAuthStore();
   const router = useRouter();
