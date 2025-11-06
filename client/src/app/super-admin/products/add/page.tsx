@@ -53,35 +53,38 @@ function SuperAdminManageProductPage() {
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const searchParams = useSearchParams();
-  const getCurrentEditedProductId = searchParams.get("id");
-  const isEditMode = !!getCurrentEditedProductId;
+  const getCurrentEditedProductId = searchParams?.get("id") || "";
+const isEditMode = !!getCurrentEditedProductId;
+
 
   const router = useRouter();
   const { createProduct, isLoading, updateProduct, getProductById } =
     useProductStore();
 
-  useEffect(() => {});
   useEffect(() => {
-    if (isEditMode) {
-      getProductById(getCurrentEditedProductId).then((product) => {
-        if (product) {
-          setFormState({
-            name: product.name,
-            brandCategory: product.brandCategory, // optional reset
-            brand: product.brand,
-            description: product.description,
-            category: product.category,
-            gender: product.gender,
-            price: product.price.toString(),
-            stock: product.stock.toString(),
-            productType: product.productType,
-          });
-          setSelectedSizes(product.sizes);
-          setSelectedColors(product.colors);
-        }
-      });
-    }
-  }, [isEditMode, getCurrentEditedProductId, getProductById]);
+  if (!isEditMode) return;
+
+  if (getCurrentEditedProductId) {
+    getProductById(getCurrentEditedProductId).then((product) => {
+      if (product) {
+        setFormState({
+          name: product.name,
+          brandCategory: product.brandCategory,
+          brand: product.brand,
+          description: product.description,
+          category: product.category,
+          gender: product.gender,
+          price: product.price.toString(),
+          stock: product.stock.toString(),
+          productType: product.productType,
+        });
+        setSelectedSizes(product.sizes);
+        setSelectedColors(product.colors);
+      }
+    });
+  }
+}, [isEditMode, getCurrentEditedProductId, getProductById]);
+
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
