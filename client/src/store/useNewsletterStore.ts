@@ -59,7 +59,7 @@ export const useNewsletterStore = create<NewsletterStore>((set) => ({
 
   set({ isLoading: false });
   return { success: false, message: msg };
-}
+},
   // Delete a subscriber by email
   deleteSubscriber: async (email: string) => {
     set({ isLoading: true });
