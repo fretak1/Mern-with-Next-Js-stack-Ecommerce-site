@@ -138,7 +138,7 @@ interface OrderStore {
     }
   ) => Promise<Order | null>;
 
-  finalizeChapaOrder: (txRef: string, chapaData: ChapaFinalizeResponse) => Promise<boolean>;
+  finalizeChapaOrder: (txRef: string ) => Promise<boolean>;
   createOrder: (orderData: CreateOrderData) => Promise<Order | null>;
   getOrder: (orderId: string) => Promise<Order | null>;
   updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<boolean>;
@@ -196,7 +196,7 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
     try {
       const response = await axios.put(
         `${API_ROUTES.ORDER}/finalize-chapa-order/${txRef}`,
-        { chapaData },
+        { },
         { withCredentials: true }
       );
 
