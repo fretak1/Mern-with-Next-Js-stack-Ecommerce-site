@@ -20,11 +20,9 @@ import { toast } from "sonner";
 import logo from "../../../../public/images/logo1.png";
 import { ArrowLeft, Store } from "lucide-react";
 
-interface LoginCardProps {
-  onSwitchToRegister: () => void;
-}
 
-export default function LoginPage({ onSwitchToRegister }: LoginCardProps) {
+
+export default function LoginPage() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const { login, isLoading } = useAuthStore();
   const router = useRouter();
