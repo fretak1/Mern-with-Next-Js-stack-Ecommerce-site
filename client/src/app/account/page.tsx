@@ -302,14 +302,16 @@ export default function UserAccountPage() {
                   className="space-y-6 p-6 bg-white rounded-lg border border-gray-100 shadow-sm"
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      "name",
-                      "address",
-                      "city",
-                      "country",
-                      "postalCode",
-                      "phone",
-                    ].map((field) => (
+                   {(
+  [
+    "name",
+    "address",
+    "city",
+    "country",
+    "postalCode",
+    "phone",
+  ] as (keyof Omit<AddressFormData, "isDefault">)[]
+).map((field) => (
                       <div key={field} className="space-y-2">
                         <Label
                           htmlFor={field}
