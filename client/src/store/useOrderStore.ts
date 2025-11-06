@@ -224,23 +224,33 @@ createChapaOrder: async (orderData) => {
         return false;
       }
     } catch (error: unknown) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        toast.error("Your session has expired. Please login again.");
-        setTimeout(() => {
-          window.location.href = "/auth/login";
-        }, 1000);
-      } else {
-        toast.error(error.response?.data?.message);
-      }
-
-      set({
-        isLoading: false,
-        error:
-          error.response?.data?.message || "Failed to finalize Chapa order",
-      });
-      return false;
+  if (axios.isAxiosError(error)) {
+    // Now TypeScript knows 'error' is an AxiosError
+    if (error.response?.status === 401) {
+      toast.error("Your session has expired. Please login again.");
+      setTimeout(() => {
+        window.location.href = "/auth/login";
+      }, 1000);
+    } else {
+      toast.error(error.response?.data?.message || "Failed to finalize Chapa order");
     }
-  },
+
+    set({
+      isLoading: false,
+      error: error.response?.data?.message || "Failed to finalize Chapa order",
+    });
+  } else if (error instanceof Error) {
+    // For normal Error objects
+    toast.error(error.message);
+    set({ isLoading: false, error: error.message });
+  } else {
+    // Fallback for unknown error types
+    toast.error("Failed to finalize Chapa order");
+    set({ isLoading: false, error: "Failed to finalize Chapa order" });
+  }
+
+  return false;
+},
   createOrder: async (orderData) => {
     set({ isLoading: true, error: null, isPaymentProcessing: true });
     try {
