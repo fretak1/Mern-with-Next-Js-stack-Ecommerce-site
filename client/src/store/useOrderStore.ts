@@ -247,6 +247,41 @@ createChapaOrder: async (orderData) => {
     return false;
   }
 },
+  createOrder: async (orderData) => {
+    set({ isLoading: true, error: null, isPaymentProcessing: true });
+    try {
+      const response = await axios.post(
+        `${API_ROUTES.ORDER}/create-order`,
+        orderData,
+        { withCredentials: true }
+      );
+
+      set({
+        isLoading: false,
+        currentOrder: response.data,
+        isPaymentProcessing: false,
+      });
+
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Your session has expired. Please login again.");
+        // Optional redirect after a delay
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 1000);
+      } else {
+        toast.error("Failed to Create Order");
+      }
+      set({
+        isLoading: false,
+        isPaymentProcessing: false,
+        error: "Failed to Create Order",
+      });
+
+      return null;
+    }
+  },
   updateOrderStatus: async (orderId, status) => {
     set({ isLoading: true, error: null });
     try {
