@@ -204,89 +204,49 @@ createChapaOrder: async (orderData) => {
 },
 
 
-  finalizeChapaOrder: async (txRef : string) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await axios.put(
-        `${API_ROUTES.ORDER}/finalize-chapa-order/${txRef}`,
-        { },
-        { withCredentials: true }
-      );
+ finalizeChapaOrder: async (txRef: string): Promise<boolean> => {
+  set({ isLoading: true, error: null });
+  try {
+    const response = await axios.put(
+      `${API_ROUTES.ORDER}/finalize-chapa-order/${txRef}`,
+      {},
+      { withCredentials: true }
+    );
 
-      if (response.data.success) {
-        set({
-          isLoading: false,
-          currentOrder: response.data.order,
-        });
-        return true;
-      } else {
-        set({ isLoading: false, error: response.data.message });
-        return false;
-      }
-    } catch (error: unknown) {
-  if (axios.isAxiosError(error)) {
-    // Now TypeScript knows 'error' is an AxiosError
-    if (error.response?.status === 401) {
-      toast.error("Your session has expired. Please login again.");
-      setTimeout(() => {
-        window.location.href = "/auth/login";
-      }, 1000);
-    } else {
-      toast.error(error.response?.data?.message || "Failed to finalize Chapa order");
-    }
-
-    set({
-      isLoading: false,
-      error: error.response?.data?.message || "Failed to finalize Chapa order",
-    });
-  } else if (error instanceof Error) {
-    // For normal Error objects
-    toast.error(error.message);
-    set({ isLoading: false, error: error.message });
-  } else {
-    // Fallback for unknown error types
-    toast.error("Failed to finalize Chapa order");
-    set({ isLoading: false, error: "Failed to finalize Chapa order" });
-  }
-
-  return false;
-},
-  createOrder: async (orderData) => {
-    set({ isLoading: true, error: null, isPaymentProcessing: true });
-    try {
-      const response = await axios.post(
-        `${API_ROUTES.ORDER}/create-order`,
-        orderData,
-        { withCredentials: true }
-      );
-
+    if (response.data.success) {
       set({
         isLoading: false,
-        currentOrder: response.data,
-        isPaymentProcessing: false,
+        currentOrder: response.data.order,
       });
-
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
+      return true;
+    } else {
+      set({ isLoading: false, error: response.data.message });
+      return false;
+    }
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
         toast.error("Your session has expired. Please login again.");
-        // Optional redirect after a delay
         setTimeout(() => {
           window.location.href = "/auth/login";
         }, 1000);
       } else {
-        toast.error("Failed to Create Order");
+        toast.error(error.response?.data?.message || "Failed to finalize Chapa order");
       }
       set({
         isLoading: false,
-        isPaymentProcessing: false,
-        error: "Failed to Create Order",
+        error: error.response?.data?.message || "Failed to finalize Chapa order",
       });
-
-      return null;
+    } else if (error instanceof Error) {
+      toast.error(error.message);
+      set({ isLoading: false, error: error.message });
+    } else {
+      toast.error("Failed to finalize Chapa order");
+      set({ isLoading: false, error: "Failed to finalize Chapa order" });
     }
-  },
-
+    return false;
+  }
+},
   updateOrderStatus: async (orderId, status) => {
     set({ isLoading: true, error: null });
     try {
