@@ -320,7 +320,7 @@ function Header() {
                         <span className="font-medium">{item.name}</span>
                         {item.price && (
                           <span className="text-sm text-gray-500">
-                            ${item.price}
+                            {item.price} ETB
                           </span>
                         )}
                       </li>
