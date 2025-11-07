@@ -23,7 +23,7 @@ export const initializePayment = async (req: Request, res: Response) => {
     }
 
     const { amount, currency, customerEmail, customerName, txRef } = req.body;
-    const returnUrl = `${APP_BASE_URL}/checkout/success/${txRef}`;
+    const returnUrl = `https://mern-with-next-js-stack-ecommerce-s.vercel.app/checkout/success/${txRef}`;
 
     const resp = await chapaAxios.post("/transaction/initialize", {
       amount,
