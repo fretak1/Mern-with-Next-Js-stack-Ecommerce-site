@@ -28,7 +28,7 @@ console.log(
 
 const corsOptions = {
   origin: [
-      "https://mern-with-next-js-stack-ecommerce-s-six.vercel.app", 
+      "https://mern-with-next-js-stack-ecommerce-s.vercel.app", 
       "http://localhost:3000" 
     ],
   credentials: true,
