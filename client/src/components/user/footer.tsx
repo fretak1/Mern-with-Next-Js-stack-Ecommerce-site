@@ -171,7 +171,7 @@ export function Footer() {
 
         <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
           <p>
-            &copy; {new Date().getFullYear()} EthioMarket, Inc. All rights
+            &copy; {new Date().getFullYear()} FreTak, Inc. All rights
             reserved.
           </p>
         </div>
