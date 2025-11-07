@@ -223,8 +223,11 @@ function ProductListingContent() {
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" className="lg:hidden">
-                  <SlidersHorizontal className="h-4 w-4 mr-2" />
-                  Filters
+                     <span className="flex items-center gap-2">
+      <SlidersHorizontal className="h-4 w-4 mr-2" />
+      Filters
+    </span>
+
                 </Button>
               </DialogTrigger>
               <DialogContent className="w-[90vw] max-h-[600px] overflow-auto max-w-[400px]">
