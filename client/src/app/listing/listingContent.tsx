@@ -221,15 +221,14 @@ function ProductListingContent() {
           <h2 className="text-3xl font-bold text-gray-800">Products</h2>
           <div className="flex items-center gap-4">
             <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="lg:hidden">
-                     <span className="flex items-center gap-2">
-      <SlidersHorizontal className="h-4 w-4 mr-2" />
-      Filters
-    </span>
-
-                </Button>
-              </DialogTrigger>
+             <DialogTrigger asChild>
+              <Button variant="outline" className="lg:hidden">
+                <span className="flex items-center gap-2">
+                   <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Filters
+                </span>
+              </Button>
+             </DialogTrigger>
               <DialogContent className="w-[90vw] max-h-[600px] overflow-auto max-w-[400px]">
                 <DialogHeader>
                   <DialogTitle className="text-xl font-semibold">
