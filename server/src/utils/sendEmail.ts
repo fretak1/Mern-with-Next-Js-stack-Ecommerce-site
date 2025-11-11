@@ -16,7 +16,7 @@ const mailerSend = new MailerSend({
  */
 export const sendEmail = async (to: string, subject: string, html: string) => {
   // Use the verified sender email address from environment variables
-  const senderEmail = process.env.MAILERSEND_SENDER_EMAIL as string;
+  const senderEmail = process.env.SENDER_EMAIL as string;
 
   if (!senderEmail) {
     console.error("MailerSend sender email is not configured!");
