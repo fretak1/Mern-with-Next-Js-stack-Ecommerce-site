@@ -147,7 +147,7 @@ export function Footer() {
               <input
                 type="email"
                 placeholder="Your email address"
-                className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading || isLoading}
