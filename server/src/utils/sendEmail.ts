@@ -1,17 +1,20 @@
 import * as Brevo from "@getbrevo/brevo";
 
+// Initialize the API instance
 const apiInstance = new Brevo.TransactionalEmailsApi();
 
-// THIS is the correct authentication method for SDK v3
+// Authenticate
 (apiInstance as any).apiKey = process.env.BREVO_API_KEY!;
 apiInstance.defaultHeaders = {
   ...apiInstance.defaultHeaders,
   "api-key": process.env.BREVO_API_KEY!,
 };
 
-export const sendEmail = async (to: string, subject: string, html: string) => {
+// TypeScript-friendly sendEmail function
+export const sendEmail = async (to: string, subject: string, html: string): Promise<void> => {
   try {
-    const email = new Brevo.SendSmtpEmail({
+    // Create the email object
+    const sendSmtpEmail: Brevo.SendSmtpEmail = {
       sender: {
         name: "Ethio Market",
         email: process.env.SMTP_USER!,
@@ -19,11 +22,14 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
       to: [{ email: to }],
       subject,
       htmlContent: html,
-    });
+    };
 
-    const response = await apiInstance.sendTransacEmail(email);
-    console.log("Email sent!", response.body);
+    // Send the email
+    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+
+    console.log("Email sent successfully!", response);
   } catch (error: any) {
-    console.error("FAILED:", error?.response?.body || error);
+    // Handle errors safely
+    console.error("Email sending failed:", error?.response?.body || error);
   }
 };
