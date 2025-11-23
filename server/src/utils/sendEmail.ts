@@ -4,8 +4,9 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
   try {
     const transporter = nodemailer.createTransport({
      host: "smtp.gmail.com", // Explicitly define the host
-      port: 465,             // Use port 465 for SMTPS (secure connection)
-      secure: true,  
+      port: 587,             // Use port 465 for SMTPS (secure connection)
+      secure: false,
+      requireTLS: true,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
