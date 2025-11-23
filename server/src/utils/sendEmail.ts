@@ -1,24 +1,34 @@
-import nodemailer from "nodemailer";
+import * as Brevo from "@getbrevo/brevo";
+
+// Initialize the API client
+const apiInstance = new Brevo.TransactionalEmailsApi();
+
+// Set API Key
+apiInstance.setApiKey(
+  Brevo.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_API_KEY as string
+);
 
 export const sendEmail = async (to: string, subject: string, html: string) => {
   try {
-    const transporter = nodemailer.createTransport({
-     host: "smtp.gmail.com", // Explicitly define the host
-      port: 587,             // Use port 465 for SMTPS (secure connection)
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    const sendSmtpEmail = new Brevo.SendSmtpEmail();
 
-    await transporter.sendMail({
-      from: `"Ethio Market" <${process.env.EMAIL_USER}>`,
-      to, 
-      subject,
-      html,
-    });
-  } catch (error) {
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.htmlContent = html;
+
+    sendSmtpEmail.sender = {
+      name: "Ethio Market",
+      email: process.env.SMTP_USER as string,
+    };
+
+    sendSmtpEmail.to = [{ email: to }];
+
+    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log(`Email sent successfully to ${to}:`, response);
+  } catch (error: any) {
     console.error(`Failed to send email to ${to}:`, error);
+    if (error.response) {
+      console.error(error.response.body);
+    }
   }
 };
