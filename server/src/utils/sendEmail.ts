@@ -7,10 +7,6 @@ apiInstance.setDefaultAuthentication(
   new Brevo.ApiKeyAuth("api-key", process.env.BREVO_API_KEY!)
 );
 
-apiInstance.getTransacEmailTemplates()
-  .then(() => console.log("API Key is working!"))
-  .catch(err => console.error("API Key is NOT working:", err?.response?.body || err));
-
 
 export const sendEmail = async (to: string, subject: string, html: string) => {
   try {
