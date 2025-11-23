@@ -1,14 +1,9 @@
 import * as Brevo from "@getbrevo/brevo";
 
-// Initialize the API client
 const apiInstance = new Brevo.TransactionalEmailsApi();
 
-console.log(process.env.BREVO_API_KEY,'/////////////')
-
-// Set API Key
-apiInstance.setApiKey(
-  Brevo.TransactionalEmailsApiApiKeys.apiKey,
-  process.env.BREVO_API_KEY as string
+apiInstance.setDefaultAuthentication(
+  new Brevo.ApiKeyAuth("header", "api-key", process.env.BREVO_API_KEY!)
 );
 
 export const sendEmail = async (to: string, subject: string, html: string) => {
@@ -17,20 +12,15 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
 
     sendSmtpEmail.subject = subject;
     sendSmtpEmail.htmlContent = html;
-
     sendSmtpEmail.sender = {
       name: "Ethio Market",
-      email: process.env.SMTP_USER as string,
+      email: process.env.SMTP_USER!,
     };
-
     sendSmtpEmail.to = [{ email: to }];
 
     const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log(`Email sent successfully to ${to}:`, response);
+    console.log("Email sent!", response);
   } catch (error: any) {
-    console.error(`Failed to send email to ${to}:`, error);
-    if (error.response) {
-      console.error(error.response.body);
-    }
+    console.error("Failed:", error?.response?.body || error);
   }
 };
