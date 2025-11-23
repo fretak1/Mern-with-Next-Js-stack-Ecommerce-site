@@ -2,8 +2,9 @@ import * as Brevo from "@getbrevo/brevo";
 
 const apiInstance = new Brevo.TransactionalEmailsApi();
 
+// Correct authentication (ONLY 2 arguments)
 apiInstance.setDefaultAuthentication(
-  new Brevo.ApiKeyAuth("header", "api-key", process.env.BREVO_API_KEY!)
+  new Brevo.ApiKeyAuth("api-key", process.env.BREVO_API_KEY!)
 );
 
 console.log("SENDING WITH HEADERS:", apiInstance.defaultHeaders);
