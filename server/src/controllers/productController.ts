@@ -70,10 +70,10 @@ export const createProduct = async (req: any, res: Response) => {
 
     <h3 style="color: #34495e; margin-bottom: 10px;">${name}</h3>
     <p style="color: #555; line-height: 1.5;">${description}</p>
-    <p style="font-weight: bold; color: #27ae60; font-size: 18px;">Price: ${price} ETB</p>
+    <p style="font-weight: bold; color: #3b82f6; font-size: 18px;">Price: ${price} ETB</p>
 
     <div style="text-align: center; margin-top: 20px;">
-      <a href="https://mern-with-next-js-stack-ecommerce-s.vercel.app/products/${newlyCreatedProduct.id}"
+      <a href="https://mern-with-next-js-stack-ecommerce-s.vercel.app/listing/${newlyCreatedProduct.id}"
          style="display: inline-block; padding: 12px 25px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color 0.3s;">
         View Product
       </a>
