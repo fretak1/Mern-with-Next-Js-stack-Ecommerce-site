@@ -27,7 +27,7 @@ export const sendEmail = async (to: string, subject: string, html: string): Prom
     // Send the email
     const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
-    console.log("Email sent successfully!", response);
+   console.log("Email sent successfully! ID:", response.body.messageId);
   } catch (error: any) {
     // Handle errors safely
     console.error("Email sending failed:", error?.response?.body || error);
