@@ -3,6 +3,8 @@ import * as Brevo from "@getbrevo/brevo";
 // Initialize the API client
 const apiInstance = new Brevo.TransactionalEmailsApi();
 
+console.log(process.env.BREVO_API_KEY,'/////////////')
+
 // Set API Key
 apiInstance.setApiKey(
   Brevo.TransactionalEmailsApiApiKeys.apiKey,
