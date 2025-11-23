@@ -6,6 +6,8 @@ apiInstance.setDefaultAuthentication(
   new Brevo.ApiKeyAuth("header", "api-key", process.env.BREVO_API_KEY!)
 );
 
+console.log("SENDING WITH HEADERS:", apiInstance.defaultHeaders);
+
 export const sendEmail = async (to: string, subject: string, html: string) => {
   try {
     const sendSmtpEmail = new Brevo.SendSmtpEmail();
