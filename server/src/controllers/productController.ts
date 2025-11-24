@@ -61,29 +61,25 @@ export const createProduct = async (req: any, res: Response) => {
     // Email content
     const subject = `New Product Added: ${name}`;
     const html = `
-  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px; background-color: #f9f9f9;">
-    <h2 style="color: #2c3e50; text-align: center;">✨ New Product Alert! ✨</h2>
-    
-    <div style="text-align: center; margin: 20px 0;">
-      <img src="${imageUrls[0]}" alt="${name}" style="width: 100%; max-width: 300px; border-radius: 10px;"/>
-    </div>
+  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+    <p>Hello,</p>
+    <p>A new product has been added:</p>
 
-    <h3 style="color: #34495e; margin-bottom: 10px;">${name}</h3>
-    <p style="color: #555; line-height: 1.5;">${description}</p>
-    <p style="font-weight: bold; color: #3b82f6; font-size: 18px;">Price: ${price} ETB</p>
+    <p><b>${name}</b></p>
+    <p>${description}</p>
+    <p><b>Price:</b> ${price} ETB</p>
 
-    <div style="text-align: center; margin-top: 20px;">
-      <a href="https://mern-with-next-js-stack-ecommerce-s.vercel.app/listing/${newlyCreatedProduct.id}"
-         style="display: inline-block; padding: 12px 25px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color 0.3s;">
+    <p>
+      Link: 
+      <a href="https://mern-with-next-js-stack-ecommerce-s.vercel.app/products/${newlyCreatedProduct.id}">
         View Product
       </a>
-    </div>
-
-    <p style="text-align: center; color: #999; margin-top: 20px; font-size: 12px;">
-      You are receiving this email because you subscribed to Ethio Market newsletter.
     </p>
+
+    <p>Thanks,<br>Ethio Market Team</p>
   </div>
 `;
+
 
 
     // Send emails individually in parallel
