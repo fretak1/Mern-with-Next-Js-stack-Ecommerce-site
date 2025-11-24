@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import nodemailer from "nodemailer";
+import { sendEmail } from "../utils/sendEmail";
 
 export const sendComment = async (
   req: Request,
@@ -13,27 +13,10 @@ export const sendComment = async (
     return;
   }
 
-  try {
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+       const subject = `New Comment from ${name}`
+       const html = `From: ${name}\nEmail: ${email}\n\nMessage:\n${message}`
 
-    await transporter.sendMail({
-      from: email,
-      to: process.env.SMTP_USER, // your receiving email
-      subject: `New Comment from ${name}`,
-      text: `From: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
-    });
+  sendEmail(email, subject, html)
 
-    res.status(200).json({ success: true, message: "Comment sent!" });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to send comment." });
-  }
+  
 };
