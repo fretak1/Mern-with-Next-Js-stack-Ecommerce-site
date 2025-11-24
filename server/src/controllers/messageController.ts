@@ -11,7 +11,7 @@ export const sendComment = async (req: Request, res: Response): Promise<void> =>
 
   try {
     const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwgC_CcWTb1pUOtJ-ZdaBGMiKTA6jXD1SmjjOZr1RzSaU62UPZCOWhZJ_wIFhyPJWGb/exec";
-
+    
     const response = await axios.post(GOOGLE_SHEET_URL, { name, email, message });
 
     if (response.data.result === "success") {
