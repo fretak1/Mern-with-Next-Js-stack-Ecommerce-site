@@ -84,10 +84,15 @@ npm install
 
 
 DATABASE_URL=postgresql://username:password@localhost:5432/ethiomarket
+
 JWT_SECRET=your_jwt_secret
+
 CLOUDINARY_NAME=your_cloudinary_name
+
 CLOUDINARY_API_KEY=your_api_key
+
 CLOUDINARY_API_SECRET=your_api_secret
+
 CLIENT_URL=http://localhost:3000
 
 
