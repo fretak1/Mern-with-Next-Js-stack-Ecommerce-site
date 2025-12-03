@@ -5,11 +5,17 @@ EthioMarket is a fullstack e-commerce web application designed to provide a seam
 # Tech Stack
 
 •	Frontend:  React, Next.js, Tailwind CSS, Framer Motion
+
 •	Backend:  Node.js, Express.js, Prisma ORM
+
 •	Database: PostgreSQL
+
 •	File Storage / Media:  Cloudinary
+
 •	Authentication:  JWT (Access & Refresh Tokens)
+
 •	Payment Gateway:  Chapa
+
 •	Other:  Multer for file uploads, bcrypt for password hashing, cookie-parser, CORS
 
 # Features
